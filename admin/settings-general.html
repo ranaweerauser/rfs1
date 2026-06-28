@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>General Settings — Admin Panel</title>
+<link rel="icon" href="../assets/images/logo.jpg" />
+<link rel="stylesheet" href="../assets/css/style.css" />
+<link rel="stylesheet" href="../assets/css/themes.css" />
+<link rel="stylesheet" href="../assets/css/admin.css" />
+</head>
+<body>
+<div id="admin-root"></div>
+
+<script type="module">
+  import { initAdminLayout, setPageTitle } from "../assets/js/admin/admin-layout.js";
+  import { getCachedSettings, subscribeSettings } from "../assets/js/settings.js";
+  import { db, doc, setDoc, COL, SETTINGS_DOC_ID } from "../assets/js/firebase-config.js";
+  import { uploadToCloudinary } from "../assets/js/cloudinary.js";
+  import { escapeHtml, toast } from "../assets/js/ui-helpers.js";
+
+  const session = initAdminLayout("settings-general.html");
+
+  if (session) {
+    setPageTitle("General Settings");
+    let logoUrl = "";
+    let faviconUrl = "";
+
+    subscribeSettings((settings) => {
+      logoUrl = settings.logoUrl;
+      faviconUrl = settings.faviconUrl;
+      document.getElementById("admin-page-content").innerHTML = `
+        <div class="card pad-24" style="max-width:680px;">
+          <h3>Store Identity</h3>
+          <div class="field"><label>Store Name</label><input type="text" class="input" id="s-storename" value="${escapeHtml(settings.storeName)}" /></div>
+          <div class="field"><label>Tagline</label><input type="text" class="input" id="s-tagline" value="${escapeHtml(settings.tagline)}" /></div>
+
+          <div class="field">
+            <label>Logo</label>
+            <div class="flex items-center gap-16">
+              <img id="logo-preview" src="${logoUrl}" style="width:64px;height:64px;border-radius:10px;object-fit:cover;" />
+              <button type="button" class="btn btn-sm btn-outline" id="upload-logo-btn">Change Logo</button>
+              <input type="file" id="logo-input" accept="image/*" style="display:none;" />
+            </div>
+          </div>
+
+          <h3 style="margin-top:26px;">Contact Information</h3>
+          <div class="field"><label>Phone Number</label><input type="text" class="input" id="s-phone" value="${escapeHtml(settings.phone)}" /></div>
+          <div class="field"><label>Email Address</label><input type="email" class="input" id="s-email" value="${escapeHtml(settings.email)}" /></div>
+          <div class="field"><label>Store Address</label><textarea class="input" id="s-address">${escapeHtml(settings.address)}</textarea></div>
+          <div class="field"><label>Google Maps Embed URL (optional)</label><input type="text" class="input" id="s-map" value="${escapeHtml(settings.mapEmbedUrl || "")}" placeholder="https://www.google.com/maps/embed?..." /></div>
+
+          <h3 style="margin-top:26px;">Social Media Links</h3>
+          <div class="field"><label>Facebook</label><input type="text" class="input" id="s-fb" value="${escapeHtml(settings.social?.facebook || "")}" /></div>
+          <div class="field"><label>Instagram</label><input type="text" class="input" id="s-ig" value="${escapeHtml(settings.social?.instagram || "")}" /></div>
+          <div class="field"><label>TikTok</label><input type="text" class="input" id="s-tiktok" value="${escapeHtml(settings.social?.tiktok || "")}" /></div>
+          <div class="field"><label>YouTube</label><input type="text" class="input" id="s-yt" value="${escapeHtml(settings.social?.youtube || "")}" /></div>
+
+          <h3 style="margin-top:26px;">Currency & Announcement</h3>
+          <div class="field"><label>Currency Symbol</label><input type="text" class="input" id="s-currency" value="${escapeHtml(settings.currencySymbol)}" /></div>
+          <label class="flex items-center gap-8" style="margin-bottom:10px;"><input type="checkbox" id="s-announce-enabled" ${settings.announcementEnabled ? "checked" : ""} /> Show Announcement Bar</label>
+          <div class="field"><input type="text" class="input" id="s-announce-text" value="${escapeHtml(settings.announcementText || "")}" placeholder="e.g. Free delivery for orders above Rs.5000" /></div>
+
+          <h3 style="margin-top:26px;">Maintenance Mode</h3>
+          <label class="flex items-center gap-8" style="margin-bottom:10px;"><input type="checkbox" id="s-maintenance" ${settings.maintenanceMode ? "checked" : ""} /> Enable Maintenance Mode (hides storefront from customers)</label>
+          <div class="field"><textarea class="input" id="s-maintenance-msg">${escapeHtml(settings.maintenanceMessage)}</textarea></div>
+
+          <button class="btn btn-primary btn-block" id="save-settings-btn" style="margin-top:10px;">Save All Settings (Live Update)</button>
+        </div>
+      `;
+      bindEvents();
+    });
+
+    function bindEvents() {
+      document.getElementById("upload-logo-btn").addEventListener("click", () => document.getElementById("logo-input").click());
+      document.getElementById("logo-input").addEventListener("change", async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        try {
+          const result = await uploadToCloudinary(file);
+          logoUrl = result.url;
+          faviconUrl = result.url;
+          document.getElementById("logo-preview").src = logoUrl;
+          toast("Logo uploaded. Click 'Save All Settings' to apply.", "success");
+        } catch (err) {
+          toast(err.message, "error");
+        }
+      });
+
+      document.getElementById("save-settings-btn").addEventListener("click", async () => {
+        const btn = document.getElementById("save-settings-btn");
+        btn.disabled = true;
+        btn.textContent = "Saving...";
+        try {
+          await setDoc(doc(db, COL.SETTINGS, SETTINGS_DOC_ID), {
+            storeName: document.getElementById("s-storename").value.trim(),
+            tagline: document.getElementById("s-tagline").value.trim(),
+            logoUrl, faviconUrl,
+            phone: document.getElementById("s-phone").value.trim(),
+            email: document.getElementById("s-email").value.trim(),
+            address: document.getElementById("s-address").value.trim(),
+            mapEmbedUrl: document.getElementById("s-map").value.trim(),
+            social: {
+              facebook: document.getElementById("s-fb").value.trim(),
+              instagram: document.getElementById("s-ig").value.trim(),
+              tiktok: document.getElementById("s-tiktok").value.trim(),
+              youtube: document.getElementById("s-yt").value.trim()
+            },
+            currencySymbol: document.getElementById("s-currency").value.trim(),
+            announcementEnabled: document.getElementById("s-announce-enabled").checked,
+            announcementText: document.getElementById("s-announce-text").value.trim(),
+            maintenanceMode: document.getElementById("s-maintenance").checked,
+            maintenanceMessage: document.getElementById("s-maintenance-msg").value.trim()
+          }, { merge: true });
+          toast("✅ Settings saved and live on your website now!", "success");
+        } catch (err) {
+          toast("Failed to save settings.", "error");
+        }
+        btn.disabled = false;
+        btn.textContent = "Save All Settings (Live Update)";
+      });
+    }
+  }
+</script>
+</body>
+</html>

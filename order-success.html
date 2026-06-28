@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Order Confirmed — Ranaweera Family Super</title>
+<link rel="icon" href="assets/images/logo.jpg"/>
+<link rel="stylesheet" href="assets/css/style.css"/>
+<link rel="stylesheet" href="assets/css/themes.css"/>
+</head>
+<body>
+<header id="app-header" class="site-header"></header>
+<main class="container section">
+  <div class="card pad-32 text-center" style="max-width:520px;margin:0 auto;">
+    <div style="font-size:64px;margin-bottom:16px;animation:logoIn .6s cubic-bezier(.34,1.56,.64,1) both;">✅</div>
+    <h1 style="color:var(--green-dark);">Order Placed Successfully!</h1>
+    <p class="muted" style="margin-bottom:20px;">Thank you! We've received your order and will process it shortly.</p>
+    <div class="card pad-16" style="background:var(--green-light);text-align:left;margin-bottom:20px;" id="order-summary-mount"></div>
+    <p class="muted" style="font-size:12.5px;margin-bottom:16px;">⏱️ You can cancel within 15 minutes from <a href="orders.html" style="color:var(--green-dark);">My Orders</a>.</p>
+    <a id="wa-link" href="#" target="_blank" class="btn btn-block btn-lg" style="background:#25D366;color:#fff;margin-bottom:10px;">💬 Confirm via WhatsApp</a>
+    <a href="orders.html" class="btn btn-outline btn-block" style="margin-bottom:10px;">📦 Track My Order</a>
+    <a href="products.html" class="btn btn-ghost btn-block">Continue Shopping</a>
+  </div>
+</main>
+<div id="app-floats"></div><nav id="app-bottomnav"></nav>
+<footer id="app-footer" class="site-footer"></footer>
+<script type="module">
+  import "./assets/js/layout.js";
+  import { escapeHtml, formatCurrency } from "./assets/js/ui-helpers.js";
+  const raw = sessionStorage.getItem("rfs_last_order");
+  if (!raw) {
+    document.querySelector("main .card").innerHTML = `<p>No recent order found.</p><a href="index.html" class="btn btn-primary">Go to Homepage</a>`;
+  } else {
+    const { order, waLink } = JSON.parse(raw);
+    document.getElementById("order-summary-mount").innerHTML = `
+      <p style="margin:0 0 6px;"><strong>Order ID:</strong> <code style="font-family:monospace;font-size:12px;">${escapeHtml(order.orderId)}</code></p>
+      <p style="margin:0 0 6px;"><strong>Total:</strong> ${formatCurrency(order.total)}</p>
+      <p style="margin:0;"><strong>Method:</strong> ${order.deliveryMethod==="pickup"?"🏬 Self Pickup":"🚚 Cash On Delivery"}</p>`;
+    document.getElementById("wa-link").href = waLink;
+    try { window.open(waLink,"_blank"); } catch {}
+  }
+</script>
+</body>
+</html>

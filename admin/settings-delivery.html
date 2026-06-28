@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Delivery & Pickup — Admin Panel</title>
+<link rel="icon" href="../assets/images/logo.jpg" />
+<link rel="stylesheet" href="../assets/css/style.css" />
+<link rel="stylesheet" href="../assets/css/themes.css" />
+<link rel="stylesheet" href="../assets/css/admin.css" />
+</head>
+<body>
+<div id="admin-root"></div>
+
+<script type="module">
+  import { initAdminLayout, setPageTitle } from "../assets/js/admin/admin-layout.js";
+  import { subscribeSettings } from "../assets/js/settings.js";
+  import { db, doc, setDoc, COL, SETTINGS_DOC_ID } from "../assets/js/firebase-config.js";
+  import { toast, escapeHtml } from "../assets/js/ui-helpers.js";
+
+  const session = initAdminLayout("settings-delivery.html");
+
+  if (session) {
+    setPageTitle("Delivery & Pickup Settings");
+
+    subscribeSettings((settings) => {
+      document.getElementById("admin-page-content").innerHTML = `
+        <div class="card pad-24" style="max-width:620px;">
+          <h3>Delivery Area</h3>
+          <p class="muted" style="font-size:13px;">This message is shown prominently to customers at checkout — use it to clarify which areas you currently deliver to.</p>
+          <div class="field"><textarea class="input" id="d-area-note">${escapeHtml(settings.deliveryAreaNote || "")}</textarea></div>
+
+          <h3 style="margin-top:24px;">Cash On Delivery Settings</h3>
+          <div class="field"><label>Base Delivery Fee (Rs.)</label><input type="number" class="input" id="d-base-fee" value="${settings.deliveryBaseFee}" /></div>
+          <div class="field"><label>Free Delivery Threshold (Rs.) — orders above this get free delivery</label><input type="number" class="input" id="d-free-threshold" value="${settings.freeDeliveryThreshold}" /></div>
+          <div class="field"><label>Minimum Order Amount (Rs.) — set 0 for no minimum</label><input type="number" class="input" id="d-min-order" value="${settings.minOrderAmount}" /></div>
+
+          <h3 style="margin-top:24px;">Self Pickup</h3>
+          <p class="muted" style="font-size:13px;">Self Pickup is always available with no delivery charge. Customers pay in person at your store address (set under General Settings).</p>
+
+          <button class="btn btn-primary btn-block" id="save-delivery-btn" style="margin-top:18px;">Save Changes</button>
+        </div>
+      `;
+      document.getElementById("save-delivery-btn").addEventListener("click", async () => {
+        const btn = document.getElementById("save-delivery-btn");
+        btn.disabled = true;
+        btn.textContent = "Saving...";
+        try {
+          await setDoc(doc(db, COL.SETTINGS, SETTINGS_DOC_ID), {
+            deliveryAreaNote: document.getElementById("d-area-note").value.trim(),
+            deliveryBaseFee: Number(document.getElementById("d-base-fee").value) || 0,
+            freeDeliveryThreshold: Number(document.getElementById("d-free-threshold").value) || 0,
+            minOrderAmount: Number(document.getElementById("d-min-order").value) || 0
+          }, { merge: true });
+          toast("✅ Delivery settings saved!", "success");
+        } catch (e) {
+          toast("Failed to save.", "error");
+        }
+        btn.disabled = false;
+        btn.textContent = "Save Changes";
+      });
+    });
+  }
+</script>
+</body>
+</html>

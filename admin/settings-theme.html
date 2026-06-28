@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Theme Customizer — Admin Panel</title>
+<link rel="icon" href="../assets/images/logo.jpg" />
+<link rel="stylesheet" href="../assets/css/themes.css" />
+<link rel="stylesheet" href="../assets/css/style.css" />
+<link rel="stylesheet" href="../assets/css/admin.css" />
+<style>
+.theme-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:16px; margin-top:16px; }
+.theme-swatch{ border-radius:14px; overflow:hidden; cursor:pointer; border:3px solid transparent; transition:all .22s ease; position:relative; }
+.theme-swatch:hover{ transform:translateY(-4px); box-shadow:0 12px 28px rgba(0,0,0,.18); }
+.theme-swatch.selected{ border-color:var(--rfs-gold-2); box-shadow:0 0 0 4px rgba(202,162,63,.3); }
+.swatch-preview{ height:90px; width:100%; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; }
+.swatch-preview .swatch-text{ position:relative; z-index:1; font-weight:700; font-size:13px; color:#fff; text-shadow:0 1px 4px rgba(0,0,0,.5); text-align:center; padding:8px; }
+.swatch-half{ width:50%; height:100%; position:absolute; top:0; }
+.swatch-half.left{ left:0; }
+.swatch-half.right{ right:0; }
+.swatch-label{ padding:8px 12px; font-size:12.5px; font-weight:600; background:var(--bg-surface); text-align:center; }
+.swatch-badge{ position:absolute; top:6px; right:6px; background:var(--rfs-gradient-gold); color:#2a1505; font-size:10px; font-weight:700; padding:2px 7px; border-radius:999px; z-index:2; }
+.custom-section{ margin-top:28px; }
+</style>
+</head>
+<body>
+<div id="admin-root"></div>
+
+<script type="module">
+  import { initAdminLayout, setPageTitle } from "../assets/js/admin/admin-layout.js";
+  import { subscribeSettings, FONT_OPTIONS } from "../assets/js/settings.js";
+  import { db, doc, setDoc, COL, SETTINGS_DOC_ID } from "../assets/js/firebase-config.js";
+  import { toast } from "../assets/js/ui-helpers.js";
+
+  const session = initAdminLayout("settings-theme.html");
+
+  // 20 themes — name, light gradient CSS, dark gradient CSS, accent colors
+  const THEMES = [
+    { id:1,  name:"Royal Gold & Maroon",  l:["#fbf0e0","#fff8ef","#caa23f","#a8123a"], d:["#0f0a05","#1a0f0a","#9a7321","#5c0d22"] },
+    { id:2,  name:"Ocean Blue",           l:["#e8f4fd","#caf0f8","#00b4d8","#023e8a"], d:["#020617","#040e1f","#0077b6","#03045e"] },
+    { id:3,  name:"Emerald Forest",       l:["#e8fdf0","#d4f7e2","#2dc653","#145a32"], d:["#020a04","#040f07","#1a7a34","#0a3622"] },
+    { id:4,  name:"Sunset Coral",         l:["#fff5f0","#ffe8df","#ff7043","#bf360c"], d:["#120400","#1c0600","#e64a19","#7f2200"] },
+    { id:5,  name:"Purple Royale",        l:["#faf5ff","#f3e8ff","#a855f7","#6b21a8"], d:["#080112","#0d0520","#7c3aed","#4c1d95"] },
+    { id:6,  name:"Sky Frost",            l:["#e0f7ff","#f0fbff","#38bdf8","#0369a1"], d:["#020d18","#040f1c","#0ea5e9","#075985"] },
+    { id:7,  name:"Cherry Blossom",       l:["#fff0f8","#fde8f5","#f9a8d4","#be185d"], d:["#150008","#1e000f","#ec4899","#9d174d"] },
+    { id:8,  name:"Midnight Galaxy",      l:["#faf8ff","#f5f0ff","#9d4edd","#5a189a"], d:["#05000e","#090218","#7b2fbe","#3c096c"] },
+    { id:9,  name:"Tropical Lime",        l:["#f7ffe8","#edffd4","#84cc16","#3f6212"], d:["#060b01","#0a1202","#4d7c0f","#1a2e05"] },
+    { id:10, name:"Copper & Slate",       l:["#f8fafc","#f1f5f9","#ea7c20","#475569"], d:["#020509","#050912","#c2440f","#334155"] },
+    { id:11, name:"Rose Gold",            l:["#fff0f2","#ffe8ec","#fb7185","#9f1239"], d:["#130005","#1d0009","#e11d48","#881337"] },
+    { id:12, name:"Arctic Aurora",        l:["#f0fdfa","#e6fdf8","#14b8a6","#0f766e"], d:["#010d0c","#021513","#0d9488","#134e4a"] },
+    { id:13, name:"Saffron Spice",        l:["#fffbeb","#fef9e0","#facc15","#d97706"], d:["#0c0800","#140e00","#ca8a04","#92400e"] },
+    { id:14, name:"Navy & Silver",        l:["#f8fafd","#f0f4fa","#94a3b8","#1e3a5f"], d:["#02060f","#040a18","#64748b","#0f2240"] },
+    { id:15, name:"Mango Fizz",           l:["#fffdf0","#fff9e0","#f59e0b","#16a34a"], d:["#0a0800","#120f00","#78350f","#14532d"] },
+    { id:16, name:"Dusk Storm",           l:["#f5f5ff","#eef0ff","#6366f1","#3730a3"], d:["#04030f","#070616","#4338ca","#312e81"] },
+    { id:17, name:"Blush Cream",          l:["#fff9fc","#fce7f3","#f472b6","#be185d"], d:["#10000a","#180010","#db2777","#702459"] },
+    { id:18, name:"Earth Terracotta",     l:["#fff6f0","#faeee4","#d87b4a","#7c3510"], d:["#0d0500","#180a03","#a0522d","#5c2a0e"] },
+    { id:19, name:"Neon Cyber",           l:["#f0fff7","#e6fff5","#22c55e","#06b6d4"], d:["#000d06","#00141a","#16a34a","#0891b2"] },
+    { id:20, name:"Sakura Night",         l:["#fff0f2","#ffe8ec","#f43f5e","#9f1239"], d:["#100004","#1a0008","#be123c","#4c0519"] }
+  ];
+
+  if (session) {
+    setPageTitle("Theme Customizer");
+
+    subscribeSettings((settings) => {
+      const t = settings.theme || {};
+      const currentId = t.themeId || 1;
+      const currentMode = t.defaultMode || "light";
+
+      document.getElementById("admin-page-content").innerHTML = `
+        <h3>🎨 Select Your Website Theme</h3>
+        <p class="muted" style="font-size:13px;">Choose from 20 premium gradient themes. Each theme works in both Light and Dark mode. Changes go live instantly across all customer pages.</p>
+
+        <div class="flex items-center gap-16" style="margin:16px 0;">
+          <label style="font-weight:600;">Preview in:</label>
+          <label class="flex items-center gap-8"><input type="radio" name="preview-mode" value="light" ${currentMode === "light" ? "checked" : ""} /> ☀️ Light Mode</label>
+          <label class="flex items-center gap-8"><input type="radio" name="preview-mode" value="dark" ${currentMode === "dark" ? "checked" : ""} /> 🌙 Dark Mode</label>
+        </div>
+
+        <div class="theme-grid" id="theme-grid"></div>
+
+        <div class="custom-section card pad-24" style="max-width:680px; margin-top:28px;">
+          <h3>🖌️ Fine-Tune Colors & Fonts</h3>
+          <p class="muted" style="font-size:13px;">Override specific colors on top of the selected theme.</p>
+
+          <div class="flex gap-12 flex-wrap">
+            <div class="field" style="flex:1; min-width:160px;"><label>Gold — Light</label><div class="color-swatch-input"><input type="color" id="c-gold1" value="${t.gold1||"#f4d77b"}" /><span>${t.gold1||"#f4d77b"}</span></div></div>
+            <div class="field" style="flex:1; min-width:160px;"><label>Gold — Mid</label><div class="color-swatch-input"><input type="color" id="c-gold2" value="${t.gold2||"#caa23f"}" /><span>${t.gold2||"#caa23f"}</span></div></div>
+            <div class="field" style="flex:1; min-width:160px;"><label>Maroon — Primary</label><div class="color-swatch-input"><input type="color" id="c-maroon1" value="${t.maroon1||"#a8123a"}" /><span>${t.maroon1||"#a8123a"}</span></div></div>
+          </div>
+
+          <div class="flex gap-12 flex-wrap">
+            <div class="field" style="flex:1; min-width:200px;"><label>Heading Font</label>
+              <select class="input" id="c-hfont">
+                ${FONT_OPTIONS.map((f) => `<option value="${f.value}" ${t.headingFont === f.value ? "selected" : ""}>${f.label}</option>`).join("")}
+              </select>
+            </div>
+            <div class="field" style="flex:1; min-width:200px;"><label>Body Font</label>
+              <select class="input" id="c-bfont">
+                ${FONT_OPTIONS.map((f) => `<option value="${f.value}" ${t.bodyFont === f.value ? "selected" : ""}>${f.label}</option>`).join("")}
+              </select>
+            </div>
+          </div>
+
+          <div class="flex gap-10" style="margin-top:10px;">
+            <button class="btn btn-primary" id="save-custom-btn" style="flex:1;">Save Custom Colors (Live)</button>
+            <button class="btn btn-outline" id="reset-custom-btn">Reset</button>
+          </div>
+        </div>
+      `;
+
+      let selectedId = currentId;
+      let previewMode = currentMode;
+
+      function renderThemeGrid() {
+        const grid = document.getElementById("theme-grid");
+        grid.innerHTML = THEMES.map((th) => {
+          const cols = previewMode === "dark" ? th.d : th.l;
+          const bg1 = cols[0], bg2 = cols[1], accent1 = cols[2], accent2 = cols[3];
+          return `
+          <div class="theme-swatch ${th.id === selectedId ? "selected" : ""}" data-id="${th.id}" title="${th.name}">
+            ${th.id === selectedId ? `<span class="swatch-badge">✓ Active</span>` : ""}
+            <div class="swatch-preview">
+              <div class="swatch-half left" style="background:${bg1};"></div>
+              <div class="swatch-half right" style="background:${bg2};"></div>
+              <div style="position:absolute;inset:0;background:linear-gradient(135deg,${accent1}44,${accent2}44);"></div>
+              <div class="swatch-text">
+                <div style="background:${accent1};border-radius:6px;padding:3px 10px;font-size:11px;margin-bottom:4px;">Button</div>
+                <div style="background:${accent2};width:40px;height:3px;border-radius:2px;margin:0 auto;"></div>
+              </div>
+            </div>
+            <div class="swatch-label">Theme ${th.id}: ${th.name}</div>
+          </div>`;
+        }).join("");
+
+        grid.querySelectorAll(".theme-swatch").forEach((swatch) => {
+          swatch.addEventListener("click", async () => {
+            selectedId = Number(swatch.dataset.id);
+            renderThemeGrid();
+            await saveTheme({ themeId: selectedId });
+          });
+        });
+      }
+
+      async function saveTheme(extra = {}) {
+        try {
+          const currentSettings = settings.theme || {};
+          await setDoc(doc(db, COL.SETTINGS, SETTINGS_DOC_ID), {
+            theme: { ...currentSettings, ...extra }
+          }, { merge: true });
+          toast(`✅ Theme applied live!`, "success");
+        } catch (e) {
+          toast("Failed to save theme.", "error");
+        }
+      }
+
+      document.querySelectorAll("input[name='preview-mode']").forEach((radio) => {
+        radio.addEventListener("change", () => {
+          previewMode = radio.value;
+          renderThemeGrid();
+        });
+      });
+
+      document.getElementById("save-custom-btn").addEventListener("click", async () => {
+        const btn = document.getElementById("save-custom-btn");
+        btn.disabled = true; btn.textContent = "Saving...";
+        await saveTheme({
+          gold1: document.getElementById("c-gold1").value,
+          gold2: document.getElementById("c-gold2").value,
+          maroon1: document.getElementById("c-maroon1").value,
+          headingFont: document.getElementById("c-hfont").value,
+          bodyFont: document.getElementById("c-bfont").value,
+          defaultMode: previewMode
+        });
+        btn.disabled = false; btn.textContent = "Save Custom Colors (Live)";
+      });
+
+      document.getElementById("reset-custom-btn").addEventListener("click", async () => {
+        if (!confirm("Reset all custom colors to theme defaults?")) return;
+        await saveTheme({
+          gold1: "#f4d77b", gold2: "#caa23f", gold3: "#9a7321",
+          maroon1: "#a8123a", maroon2: "#5c0d22", dark: "#1a1410",
+          headingFont: "'Playfair Display', serif", bodyFont: "'Poppins', sans-serif",
+          textColor: "#241a12", bgColor: "#fbf8f2", surfaceColor: "#ffffff"
+        });
+      });
+
+      document.querySelectorAll("input[type=color]").forEach((inp) => {
+        inp.addEventListener("input", () => { inp.nextElementSibling.textContent = inp.value; });
+      });
+
+      renderThemeGrid();
+    });
+  }
+</script>
+</body>
+</html>

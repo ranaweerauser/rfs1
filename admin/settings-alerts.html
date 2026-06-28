@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Alerts & Policies — Admin Panel</title>
+<link rel="icon" href="../assets/images/logo.jpg" />
+<link rel="stylesheet" href="../assets/css/style.css" />
+<link rel="stylesheet" href="../assets/css/themes.css" />
+<link rel="stylesheet" href="../assets/css/admin.css" />
+</head>
+<body>
+<div id="admin-root"></div>
+
+<script type="module">
+  import { initAdminLayout, setPageTitle } from "../assets/js/admin/admin-layout.js";
+  import { subscribeSettings } from "../assets/js/settings.js";
+  import { db, doc, setDoc, COL, SETTINGS_DOC_ID } from "../assets/js/firebase-config.js";
+  import { toast, escapeHtml } from "../assets/js/ui-helpers.js";
+
+  const session = initAdminLayout("settings-alerts.html");
+
+  if (session) {
+    setPageTitle("Alerts & Policies");
+
+    subscribeSettings((settings) => {
+      const al = settings.alerts || {};
+      const po = settings.policies || {};
+
+      document.getElementById("admin-page-content").innerHTML = `
+        <!-- CUSTOMER ALERT BAR -->
+        <div class="card pad-24" style="max-width:680px; margin-bottom:24px;">
+          <h3>🔔 Customer Alert / Notice Bar</h3>
+          <p class="muted" style="font-size:13px;">Shows a highlighted animated alert banner to ALL customers at the top of every page. Use for promotions, delivery notices, or any important announcement.</p>
+
+          <label class="flex items-center gap-8" style="margin:16px 0 12px;">
+            <input type="checkbox" id="al-enabled" ${al.enabled ? "checked" : ""} /> Enable Alert Bar on Website
+          </label>
+          <div class="field"><label>Alert Message *</label>
+            <textarea class="input" id="al-message" placeholder="e.g. 🎉 Free delivery this weekend! Orders above Rs.2000">${escapeHtml(al.message || "")}</textarea>
+          </div>
+          <div class="flex gap-16">
+            <div class="field" style="flex:1;"><label>Background Color</label>
+              <div class="color-swatch-input">
+                <input type="color" id="al-bg" value="${al.bgColor || "#fff2da"}" />
+                <span>${al.bgColor || "#fff2da"}</span>
+              </div>
+            </div>
+            <div class="field" style="flex:1;"><label>Text Color</label>
+              <div class="color-swatch-input">
+                <input type="color" id="al-text" value="${al.textColor || "#9a6400"}" />
+                <span>${al.textColor || "#9a6400"}</span>
+              </div>
+            </div>
+          </div>
+          <div id="al-preview" style="padding:9px 16px;border-radius:8px;font-weight:600;font-size:13.5px;display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+            <span>🔔</span><span id="al-preview-text">Preview will appear here</span>
+          </div>
+          <button class="btn btn-primary" id="save-alert-btn">Save Alert (Live Update)</button>
+        </div>
+
+        <!-- BANNER BUTTON CUSTOMIZATION -->
+        <div class="card pad-24" style="max-width:680px; margin-bottom:24px;">
+          <h3>🖼️ Banner Button Style</h3>
+          <p class="muted" style="font-size:13px;">Customize the button shown on homepage banners.</p>
+          <div class="field"><label>Button Text</label>
+            <input type="text" class="input" id="bb-text" value="${escapeHtml(settings.bannerButtonText || "Shop Now")}" />
+          </div>
+          <div class="flex gap-16">
+            <div class="field" style="flex:1;"><label>Button Background Color</label>
+              <div class="color-swatch-input">
+                <input type="color" id="bb-bg" value="${settings.bannerButtonBgColor || "#f4d77b"}" />
+                <span>${settings.bannerButtonBgColor || "#f4d77b"}</span>
+              </div>
+            </div>
+            <div class="field" style="flex:1;"><label>Button Text Color</label>
+              <div class="color-swatch-input">
+                <input type="color" id="bb-tc" value="${settings.bannerButtonTextColor || "#2a1505"}" />
+                <span>${settings.bannerButtonTextColor || "#2a1505"}</span>
+              </div>
+            </div>
+          </div>
+          <button class="btn btn-primary" id="save-banner-btn">Save Banner Button</button>
+        </div>
+
+        <!-- POLICY PAGES EDITOR -->
+        <div class="card pad-24" style="max-width:680px;">
+          <h3>📄 Policy Pages Editor</h3>
+          <p class="muted" style="font-size:13px;">Edit the content of policy pages shown to customers. Changes are saved to Firebase and shown live on your website immediately.</p>
+          <div class="tab-row" id="policy-tabs">
+            <button class="tab-btn active" data-policy="terms">Terms & Conditions</button>
+            <button class="tab-btn" data-policy="privacy">Privacy Policy</button>
+            <button class="tab-btn" data-policy="returns">Returns Policy</button>
+            <button class="tab-btn" data-policy="faq">FAQ</button>
+          </div>
+          <textarea class="input" id="policy-editor" style="min-height:280px; font-family:monospace; font-size:13px;">${escapeHtml(po.terms || DEFAULT_POLICIES.terms)}</textarea>
+          <p class="muted" style="font-size:12px; margin-top:6px;">You can use plain text. HTML tags like &lt;b&gt;, &lt;ul&gt;, &lt;li&gt; are also supported.</p>
+          <button class="btn btn-primary btn-block" id="save-policy-btn" style="margin-top:12px;">Save Policy (Live Update)</button>
+        </div>
+      `;
+
+      const DEFAULT_POLICIES = {
+        terms: "By using this website, you agree to the following terms:\n1. All product prices are listed in Sri Lankan Rupees.\n2. Orders are subject to product availability.\n3. Payment is accepted via Cash on Delivery or Self Pickup only.\n4. We reserve the right to cancel any order if needed.",
+        privacy: "We respect your privacy. We collect your name, phone, and address only to process your order. We do not share your data with third parties.",
+        returns: "Please inspect items at delivery before payment. For issues, contact us within 24 hours via WhatsApp with photo evidence.",
+        faq: "Q: How do I place an order?\nA: Browse products, add to cart, and checkout.\n\nQ: What payment methods do you accept?\nA: Cash on Delivery and Self Pickup only.\n\nQ: Can I cancel an order?\nA: Yes, within 15 minutes of placing it from My Orders page."
+      };
+
+      let currentPolicy = "terms";
+
+      function updateAlertPreview() {
+        const preview = document.getElementById("al-preview");
+        const text = document.getElementById("al-preview-text");
+        preview.style.background = document.getElementById("al-bg").value;
+        preview.style.color = document.getElementById("al-text").value;
+        text.textContent = document.getElementById("al-message").value || "Your alert message will appear here.";
+      }
+
+      document.querySelectorAll("#policy-tabs .tab-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          document.querySelectorAll("#policy-tabs .tab-btn").forEach((b) => b.classList.remove("active"));
+          btn.classList.add("active");
+          currentPolicy = btn.dataset.policy;
+          document.getElementById("policy-editor").value = po[currentPolicy] || DEFAULT_POLICIES[currentPolicy];
+          document.getElementById("save-policy-btn").textContent = `Save ${btn.textContent} (Live Update)`;
+        });
+      });
+
+      document.getElementById("al-bg").addEventListener("input", (e) => {
+        e.target.nextElementSibling.textContent = e.target.value;
+        updateAlertPreview();
+      });
+      document.getElementById("al-text").addEventListener("input", (e) => {
+        e.target.nextElementSibling.textContent = e.target.value;
+        updateAlertPreview();
+      });
+      document.getElementById("al-message").addEventListener("input", updateAlertPreview);
+      document.getElementById("bb-bg").addEventListener("input", (e) => { e.target.nextElementSibling.textContent = e.target.value; });
+      document.getElementById("bb-tc").addEventListener("input", (e) => { e.target.nextElementSibling.textContent = e.target.value; });
+
+      updateAlertPreview();
+
+      document.getElementById("save-alert-btn").addEventListener("click", async () => {
+        const btn = document.getElementById("save-alert-btn");
+        btn.disabled = true; btn.textContent = "Saving...";
+        try {
+          await setDoc(doc(db, COL.SETTINGS, SETTINGS_DOC_ID), {
+            alerts: {
+              enabled: document.getElementById("al-enabled").checked,
+              message: document.getElementById("al-message").value.trim(),
+              bgColor: document.getElementById("al-bg").value,
+              textColor: document.getElementById("al-text").value
+            }
+          }, { merge: true });
+          toast("✅ Alert saved and live!", "success");
+        } catch { toast("Failed to save alert.", "error"); }
+        btn.disabled = false; btn.textContent = "Save Alert (Live Update)";
+      });
+
+      document.getElementById("save-banner-btn").addEventListener("click", async () => {
+        const btn = document.getElementById("save-banner-btn");
+        btn.disabled = true; btn.textContent = "Saving...";
+        try {
+          await setDoc(doc(db, COL.SETTINGS, SETTINGS_DOC_ID), {
+            bannerButtonText: document.getElementById("bb-text").value.trim(),
+            bannerButtonBgColor: document.getElementById("bb-bg").value,
+            bannerButtonTextColor: document.getElementById("bb-tc").value
+          }, { merge: true });
+          toast("✅ Banner button updated!", "success");
+        } catch { toast("Failed to save.", "error"); }
+        btn.disabled = false; btn.textContent = "Save Banner Button";
+      });
+
+      document.getElementById("save-policy-btn").addEventListener("click", async () => {
+        const btn = document.getElementById("save-policy-btn");
+        btn.disabled = true; btn.textContent = "Saving...";
+        try {
+          const updatedPolicies = { ...(settings.policies || {}), [currentPolicy]: document.getElementById("policy-editor").value };
+          await setDoc(doc(db, COL.SETTINGS, SETTINGS_DOC_ID), { policies: updatedPolicies }, { merge: true });
+          toast(`✅ ${currentPolicy} policy saved and live!`, "success");
+        } catch { toast("Failed to save policy.", "error"); }
+        btn.disabled = false; btn.textContent = "Save Policy (Live Update)";
+      });
+    });
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,492 @@
+/* ==========================================================================
+   Ranaweera Family Super — Premium Glass + Gradient Theme System
+   20 unique themes × 2 modes (light/dark) = 40 visual variants.
+   Each theme defines: gradient backgrounds, glass surfaces, accent colors.
+   Applied via data-theme-id="1..20" on <html> element (admin sets it,
+   stored in Firebase settings, applied in settings.js on every page load).
+   ========================================================================== */
+
+/* ---- Base Glassmorphism Layer (shared across ALL themes) ---- */
+:root {
+  --glass-blur:      16px;
+  --glass-opacity:   0.15;
+  --glass-border:    rgba(255,255,255,0.22);
+  --glass-shadow:    0 8px 32px rgba(0,0,0,0.18);
+  --glass-radius:    18px;
+  --grad-angle:      135deg;
+}
+
+/* Glass card — the core visual element */
+.glass {
+  background: rgba(255,255,255, var(--glass-opacity));
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-radius);
+  box-shadow: var(--glass-shadow);
+}
+[data-theme="dark"] .glass {
+  background: rgba(0,0,0,0.28);
+  border-color: rgba(255,255,255,0.10);
+}
+
+/* Page background — full gradient wash */
+body.theme-enabled {
+  min-height: 100vh;
+  background-attachment: fixed;
+  background-size: cover;
+}
+
+/* Header glass overlay */
+body.theme-enabled .site-header {
+  background: rgba(255,255,255,0.72);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-bottom: 1px solid rgba(255,255,255,0.3);
+}
+body.theme-enabled[data-theme="dark"] .site-header {
+  background: rgba(10,5,20,0.72);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+/* Card glass overlay */
+body.theme-enabled .card {
+  background: rgba(255,255,255, var(--glass-opacity));
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.25);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+}
+body.theme-enabled[data-theme="dark"] .card {
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(255,255,255,0.10);
+}
+
+/* Product card glass */
+body.theme-enabled .product-card {
+  background: rgba(255,255,255,0.82);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.4);
+}
+body.theme-enabled[data-theme="dark"] .product-card {
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.12);
+}
+
+/* Bottom nav glass */
+body.theme-enabled .bottom-nav {
+  background: rgba(255,255,255,0.80);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-top: 1px solid rgba(255,255,255,0.3);
+}
+body.theme-enabled[data-theme="dark"] .bottom-nav {
+  background: rgba(10,5,20,0.80);
+  border-top: 1px solid rgba(255,255,255,0.08);
+}
+
+/* Footer glass */
+body.theme-enabled .site-footer {
+  background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+/* ==========================================================================
+   THEME 1 — Royal Gold & Maroon (Default Premium — matches your logo)
+   ========================================================================== */
+[data-theme-id="1"] body.theme-enabled {
+  background-image:
+    radial-gradient(ellipse at 20% 0%, rgba(202,162,63,0.40) 0%, transparent 55%),
+    radial-gradient(ellipse at 80% 100%, rgba(168,18,58,0.35) 0%, transparent 55%),
+    linear-gradient(135deg, #fbf0e0 0%, #fff8ef 50%, #fdf1e8 100%);
+}
+[data-theme-id="1"][data-theme="dark"] body.theme-enabled {
+  background-image:
+    radial-gradient(ellipse at 20% 0%, rgba(202,162,63,0.25) 0%, transparent 55%),
+    radial-gradient(ellipse at 80% 100%, rgba(168,18,58,0.25) 0%, transparent 55%),
+    linear-gradient(135deg, #0f0a05 0%, #1a0f0a 50%, #120a0f 100%);
+}
+
+/* ==========================================================================
+   THEME 2 — Ocean Blue (Deep sea gradient)
+   ========================================================================== */
+[data-theme-id="2"] {
+  --rfs-gold-1: #7de8ff; --rfs-gold-2: #00b4d8; --rfs-gold-3: #0077b6;
+  --rfs-maroon-1: #023e8a; --rfs-maroon-2: #03045e; --rfs-dark: #010213;
+}
+[data-theme-id="2"] body.theme-enabled {
+  background-image:
+    radial-gradient(ellipse at 15% 10%, rgba(0,180,216,0.30) 0%, transparent 50%),
+    radial-gradient(ellipse at 85% 90%, rgba(2,62,138,0.30) 0%, transparent 50%),
+    linear-gradient(135deg, #e8f4fd 0%, #caf0f8 50%, #daf3fb 100%);
+}
+[data-theme-id="2"][data-theme="dark"] body.theme-enabled {
+  background-image:
+    radial-gradient(ellipse at 15% 10%, rgba(0,180,216,0.20) 0%, transparent 50%),
+    radial-gradient(ellipse at 85% 90%, rgba(2,62,138,0.20) 0%, transparent 50%),
+    linear-gradient(135deg, #020617 0%, #040e1f 50%, #010b18 100%);
+}
+
+/* ==========================================================================
+   THEME 3 — Emerald Forest (Deep green luxury)
+   ========================================================================== */
+[data-theme-id="3"] {
+  --rfs-gold-1: #95f7c0; --rfs-gold-2: #2dc653; --rfs-gold-3: #1a7a34;
+  --rfs-maroon-1: #145a32; --rfs-maroon-2: #0a3622; --rfs-dark: #040f09;
+}
+[data-theme-id="3"] body.theme-enabled {
+  background-image:
+    radial-gradient(ellipse at 20% 20%, rgba(45,198,83,0.25) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 80%, rgba(20,90,50,0.25) 0%, transparent 50%),
+    linear-gradient(135deg, #e8fdf0 0%, #d4f7e2 50%, #eafbf0 100%);
+}
+[data-theme-id="3"][data-theme="dark"] body.theme-enabled {
+  background-image:
+    radial-gradient(ellipse at 20% 20%, rgba(45,198,83,0.15) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 80%, rgba(20,90,50,0.15) 0%, transparent 50%),
+    linear-gradient(135deg, #020a04 0%, #040f07 50%, #030c05 100%);
+}
+
+/* ==========================================================================
+   THEME 4 — Sunset Coral (Warm orange-pink vibes)
+   ========================================================================== */
+[data-theme-id="4"] {
+  --rfs-gold-1: #ffcba4; --rfs-gold-2: #ff7043; --rfs-gold-3: #e64a19;
+  --rfs-maroon-1: #bf360c; --rfs-maroon-2: #7f2200; --rfs-dark: #2a0a00;
+}
+[data-theme-id="4"] body.theme-enabled {
+  background-image:
+    radial-gradient(ellipse at 0% 0%, rgba(255,112,67,0.30) 0%, transparent 50%),
+    radial-gradient(ellipse at 100% 100%, rgba(191,54,12,0.25) 0%, transparent 50%),
+    linear-gradient(135deg, #fff5f0 0%, #ffe8df 50%, #fff0ea 100%);
+}
+[data-theme-id="4"][data-theme="dark"] body.theme-enabled {
+  background-image:
+    radial-gradient(ellipse at 0% 0%, rgba(255,112,67,0.18) 0%, transparent 50%),
+    radial-gradient(ellipse at 100% 100%, rgba(191,54,12,0.18) 0%, transparent 50%),
+    linear-gradient(135deg, #120400 0%, #1c0600 50%, #150500 100%);
+}
+
+/* ==========================================================================
+   THEME 5 — Purple Royale (Rich violet-purple)
+   ========================================================================== */
+[data-theme-id="5"] {
+  --rfs-gold-1: #d8b4fe; --rfs-gold-2: #a855f7; --rfs-gold-3: #7c3aed;
+  --rfs-maroon-1: #6b21a8; --rfs-maroon-2: #4c1d95; --rfs-dark: #1a0536;
+}
+[data-theme-id="5"] body.theme-enabled {
+  background-image:
+    radial-gradient(ellipse at 30% 0%, rgba(168,85,247,0.28) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 100%, rgba(107,33,168,0.28) 0%, transparent 50%),
+    linear-gradient(135deg, #faf5ff 0%, #f3e8ff 50%, #fdf4ff 100%);
+}
+[data-theme-id="5"][data-theme="dark"] body.theme-enabled {
+  background-image:
+    radial-gradient(ellipse at 30% 0%, rgba(168,85,247,0.18) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 100%, rgba(107,33,168,0.18) 0%, transparent 50%),
+    linear-gradient(135deg, #080112 0%, #0d0520 50%, #0a031a 100%);
+}
+
+/* ==========================================================================
+   THEME 6 — Sky Frost (Light blue-white clean)
+   ========================================================================== */
+[data-theme-id="6"] {
+  --rfs-gold-1: #bae6fd; --rfs-gold-2: #38bdf8; --rfs-gold-3: #0ea5e9;
+  --rfs-maroon-1: #0369a1; --rfs-maroon-2: #075985; --rfs-dark: #0c1a28;
+}
+[data-theme-id="6"] body.theme-enabled {
+  background-image:
+    radial-gradient(ellipse at 50% 0%, rgba(56,189,248,0.22) 0%, transparent 55%),
+    linear-gradient(180deg, #e0f7ff 0%, #f0fbff 60%, #ffffff 100%);
+}
+[data-theme-id="6"][data-theme="dark"] body.theme-enabled {
+  background-image:
+    radial-gradient(ellipse at 50% 0%, rgba(56,189,248,0.12) 0%, transparent 55%),
+    linear-gradient(180deg, #020d18 0%, #040f1c 60%, #030c17 100%);
+}
+
+/* ==========================================================================
+   THEME 7 — Cherry Blossom (Pink sakura)
+   ========================================================================== */
+[data-theme-id="7"] {
+  --rfs-gold-1: #fce7f3; --rfs-gold-2: #f9a8d4; --rfs-gold-3: #ec4899;
+  --rfs-maroon-1: #be185d; --rfs-maroon-2: #9d174d; --rfs-dark: #2d0820;
+}
+[data-theme-id="7"] body.theme-enabled {
+  background-image:
+    radial-gradient(ellipse at 0% 0%, rgba(249,168,212,0.35) 0%, transparent 55%),
+    radial-gradient(ellipse at 100% 100%, rgba(190,24,93,0.25) 0%, transparent 55%),
+    linear-gradient(135deg, #fff0f8 0%, #fde8f5 50%, #fff5fb 100%);
+}
+[data-theme-id="7"][data-theme="dark"] body.theme-enabled {
+  background-image:
+    radial-gradient(ellipse at 0% 0%, rgba(249,168,212,0.14) 0%, transparent 55%),
+    radial-gradient(ellipse at 100% 100%, rgba(190,24,93,0.14) 0%, transparent 55%),
+    linear-gradient(135deg, #150008 0%, #1e000f 50%, #180010 100%);
+}
+
+/* ==========================================================================
+   THEME 8 — Midnight Galaxy (Deep space dark)
+   ========================================================================== */
+[data-theme-id="8"] {
+  --rfs-gold-1: #c8b1e4; --rfs-gold-2: #9d4edd; --rfs-gold-3: #7b2fbe;
+  --rfs-maroon-1: #5a189a; --rfs-maroon-2: #3c096c; --rfs-dark: #10002b;
+}
+[data-theme-id="8"] body.theme-enabled {
+  background-image:
+    radial-gradient(ellipse at 20% 30%, rgba(157,78,221,0.22) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 70%, rgba(90,24,154,0.22) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 50%, rgba(200,177,228,0.08) 0%, transparent 70%),
+    linear-gradient(135deg, #faf8ff 0%, #f5f0ff 50%, #f8f5ff 100%);
+}
+[data-theme-id="8"][data-theme="dark"] body.theme-enabled {
+  background-image:
+    radial-gradient(ellipse at 20% 30%, rgba(157,78,221,0.30) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 70%, rgba(90,24,154,0.25) 0%, transparent 50%),
+    radial-gradient(circle at 50% 50%, rgba(255,255,255,0.02) 0%, transparent 60%),
+    linear-gradient(135deg, #05000e 0%, #090218 50%, #07011a 100%);
+}
+
+/* ==========================================================================
+   THEME 9 — Tropical Lime (Fresh green-yellow)
+   ========================================================================== */
+[data-theme-id="9"] {
+  --rfs-gold-1: #d9f99d; --rfs-gold-2: #84cc16; --rfs-gold-3: #4d7c0f;
+  --rfs-maroon-1: #3f6212; --rfs-maroon-2: #1a2e05; --rfs-dark: #0a1402;
+}
+[data-theme-id="9"] body.theme-enabled {
+  background-image:
+    radial-gradient(ellipse at 0% 100%, rgba(132,204,22,0.28) 0%, transparent 50%),
+    radial-gradient(ellipse at 100% 0%, rgba(63,98,18,0.20) 0%, transparent 50%),
+    linear-gradient(135deg, #f7ffe8 0%, #edffd4 50%, #f4ffea 100%);
+}
+[data-theme-id="9"][data-theme="dark"] body.theme-enabled {
+  background-image:
+    radial-gradient(ellipse at 0% 100%, rgba(132,204,22,0.15) 0%, transparent 50%),
+    radial-gradient(ellipse at 100% 0%, rgba(63,98,18,0.15) 0%, transparent 50%),
+    linear-gradient(135deg, #060b01 0%, #0a1202 50%, #070d01 100%);
+}
+
+/* ==========================================================================
+   THEME 10 — Copper & Slate (Industrial chic)
+   ========================================================================== */
+[data-theme-id="10"] {
+  --rfs-gold-1: #fdba74; --rfs-gold-2: #ea7c20; --rfs-gold-3: #c2440f;
+  --rfs-maroon-1: #475569; --rfs-maroon-2: #334155; --rfs-dark: #0f172a;
+}
+[data-theme-id="10"] body.theme-enabled {
+  background-image:
+    radial-gradient(ellipse at 10% 90%, rgba(234,124,32,0.22) 0%, transparent 50%),
+    radial-gradient(ellipse at 90% 10%, rgba(71,85,105,0.20) 0%, transparent 50%),
+    linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #f8fafc 100%);
+}
+[data-theme-id="10"][data-theme="dark"] body.theme-enabled {
+  background-image:
+    radial-gradient(ellipse at 10% 90%, rgba(234,124,32,0.14) 0%, transparent 50%),
+    radial-gradient(ellipse at 90% 10%, rgba(71,85,105,0.18) 0%, transparent 50%),
+    linear-gradient(135deg, #020509 0%, #050912 50%, #030710 100%);
+}
+
+/* ==========================================================================
+   THEME 11 — Rose Gold (Elegant blush)
+   ========================================================================== */
+[data-theme-id="11"] {
+  --rfs-gold-1: #fecdd3; --rfs-gold-2: #fb7185; --rfs-gold-3: #e11d48;
+  --rfs-maroon-1: #9f1239; --rfs-maroon-2: #881337; --rfs-dark: #2d0218;
+}
+[data-theme-id="11"] body.theme-enabled {
+  background-image:
+    radial-gradient(ellipse at 60% 0%, rgba(251,113,133,0.30) 0%, transparent 55%),
+    radial-gradient(ellipse at 30% 100%, rgba(159,18,57,0.22) 0%, transparent 55%),
+    linear-gradient(135deg, #fff0f2 0%, #ffe8ec 50%, #fff5f6 100%);
+}
+[data-theme-id="11"][data-theme="dark"] body.theme-enabled {
+  background-image:
+    radial-gradient(ellipse at 60% 0%, rgba(251,113,133,0.15) 0%, transparent 55%),
+    radial-gradient(ellipse at 30% 100%, rgba(159,18,57,0.15) 0%, transparent 55%),
+    linear-gradient(135deg, #130005 0%, #1d0009 50%, #180007 100%);
+}
+
+/* ==========================================================================
+   THEME 12 — Arctic Aurora (Teal-cyan-green shimmer)
+   ========================================================================== */
+[data-theme-id="12"] {
+  --rfs-gold-1: #99f6e4; --rfs-gold-2: #14b8a6; --rfs-gold-3: #0d9488;
+  --rfs-maroon-1: #0f766e; --rfs-maroon-2: #134e4a; --rfs-dark: #042f2e;
+}
+[data-theme-id="12"] body.theme-enabled {
+  background-image:
+    radial-gradient(ellipse at 0% 50%, rgba(20,184,166,0.28) 0%, transparent 55%),
+    radial-gradient(ellipse at 100% 50%, rgba(15,118,110,0.22) 0%, transparent 55%),
+    linear-gradient(135deg, #f0fdfa 0%, #e6fdf8 50%, #f0fdfb 100%);
+}
+[data-theme-id="12"][data-theme="dark"] body.theme-enabled {
+  background-image:
+    radial-gradient(ellipse at 0% 50%, rgba(20,184,166,0.18) 0%, transparent 55%),
+    radial-gradient(ellipse at 100% 50%, rgba(15,118,110,0.18) 0%, transparent 55%),
+    linear-gradient(135deg, #010d0c 0%, #021513 50%, #011110 100%);
+}
+
+/* ==========================================================================
+   THEME 13 — Saffron Spice (Rich Indian yellow-orange)
+   ========================================================================== */
+[data-theme-id="13"] {
+  --rfs-gold-1: #fef08a; --rfs-gold-2: #facc15; --rfs-gold-3: #ca8a04;
+  --rfs-maroon-1: #d97706; --rfs-maroon-2: #92400e; --rfs-dark: #1c0f00;
+}
+[data-theme-id="13"] body.theme-enabled {
+  background-image:
+    radial-gradient(ellipse at 50% 0%, rgba(250,204,21,0.32) 0%, transparent 50%),
+    radial-gradient(ellipse at 20% 100%, rgba(217,119,6,0.25) 0%, transparent 50%),
+    linear-gradient(135deg, #fffbeb 0%, #fef9e0 50%, #fffcf0 100%);
+}
+[data-theme-id="13"][data-theme="dark"] body.theme-enabled {
+  background-image:
+    radial-gradient(ellipse at 50% 0%, rgba(250,204,21,0.16) 0%, transparent 50%),
+    radial-gradient(ellipse at 20% 100%, rgba(217,119,6,0.16) 0%, transparent 50%),
+    linear-gradient(135deg, #0c0800 0%, #140e00 50%, #100b00 100%);
+}
+
+/* ==========================================================================
+   THEME 14 — Navy & Silver (Corporate sleek)
+   ========================================================================== */
+[data-theme-id="14"] {
+  --rfs-gold-1: #e2e8f0; --rfs-gold-2: #94a3b8; --rfs-gold-3: #64748b;
+  --rfs-maroon-1: #1e3a5f; --rfs-maroon-2: #0f2240; --rfs-dark: #050e1c;
+}
+[data-theme-id="14"] body.theme-enabled {
+  background-image:
+    radial-gradient(ellipse at 30% 10%, rgba(148,163,184,0.22) 0%, transparent 55%),
+    radial-gradient(ellipse at 70% 90%, rgba(30,58,95,0.22) 0%, transparent 55%),
+    linear-gradient(135deg, #f8fafd 0%, #f0f4fa 50%, #f5f8fd 100%);
+}
+[data-theme-id="14"][data-theme="dark"] body.theme-enabled {
+  background-image:
+    radial-gradient(ellipse at 30% 10%, rgba(148,163,184,0.10) 0%, transparent 55%),
+    radial-gradient(ellipse at 70% 90%, rgba(30,58,95,0.25) 0%, transparent 55%),
+    linear-gradient(135deg, #02060f 0%, #040a18 50%, #030812 100%);
+}
+
+/* ==========================================================================
+   THEME 15 — Mango Fizz (Bright tropical yellow-green)
+   ========================================================================== */
+[data-theme-id="15"] {
+  --rfs-gold-1: #fde68a; --rfs-gold-2: #f59e0b; --rfs-gold-3: #78350f;
+  --rfs-maroon-1: #16a34a; --rfs-maroon-2: #14532d; --rfs-dark: #052512;
+}
+[data-theme-id="15"] body.theme-enabled {
+  background-image:
+    radial-gradient(ellipse at 80% 0%, rgba(245,158,11,0.28) 0%, transparent 50%),
+    radial-gradient(ellipse at 0% 100%, rgba(22,163,74,0.22) 0%, transparent 50%),
+    linear-gradient(135deg, #fffdf0 0%, #fff9e0 50%, #fdfff0 100%);
+}
+[data-theme-id="15"][data-theme="dark"] body.theme-enabled {
+  background-image:
+    radial-gradient(ellipse at 80% 0%, rgba(245,158,11,0.15) 0%, transparent 50%),
+    radial-gradient(ellipse at 0% 100%, rgba(22,163,74,0.15) 0%, transparent 50%),
+    linear-gradient(135deg, #0a0800 0%, #120f00 50%, #0b0d01 100%);
+}
+
+/* ==========================================================================
+   THEME 16 — Dusk Storm (Deep indigo-gray moody)
+   ========================================================================== */
+[data-theme-id="16"] {
+  --rfs-gold-1: #a5b4fc; --rfs-gold-2: #6366f1; --rfs-gold-3: #4338ca;
+  --rfs-maroon-1: #3730a3; --rfs-maroon-2: #312e81; --rfs-dark: #0d0c2a;
+}
+[data-theme-id="16"] body.theme-enabled {
+  background-image:
+    radial-gradient(ellipse at 0% 0%, rgba(99,102,241,0.22) 0%, transparent 55%),
+    radial-gradient(ellipse at 100% 100%, rgba(55,48,163,0.20) 0%, transparent 55%),
+    linear-gradient(135deg, #f5f5ff 0%, #eef0ff 50%, #f5f5ff 100%);
+}
+[data-theme-id="16"][data-theme="dark"] body.theme-enabled {
+  background-image:
+    radial-gradient(ellipse at 0% 0%, rgba(99,102,241,0.20) 0%, transparent 55%),
+    radial-gradient(ellipse at 100% 100%, rgba(55,48,163,0.20) 0%, transparent 55%),
+    linear-gradient(135deg, #04030f 0%, #070616 50%, #060510 100%);
+}
+
+/* ==========================================================================
+   THEME 17 — Blush Cream (Soft feminine pastels)
+   ========================================================================== */
+[data-theme-id="17"] {
+  --rfs-gold-1: #fbcfe8; --rfs-gold-2: #f472b6; --rfs-gold-3: #db2777;
+  --rfs-maroon-1: #be185d; --rfs-maroon-2: #702459; --rfs-dark: #1a0012;
+}
+[data-theme-id="17"] body.theme-enabled {
+  background-image:
+    radial-gradient(ellipse at 40% 0%, rgba(244,114,182,0.22) 0%, transparent 55%),
+    radial-gradient(ellipse at 60% 100%, rgba(190,24,93,0.18) 0%, transparent 55%),
+    linear-gradient(160deg, #fff9fc 0%, #fce7f3 40%, #fff0fa 100%);
+}
+[data-theme-id="17"][data-theme="dark"] body.theme-enabled {
+  background-image:
+    radial-gradient(ellipse at 40% 0%, rgba(244,114,182,0.14) 0%, transparent 55%),
+    radial-gradient(ellipse at 60% 100%, rgba(190,24,93,0.14) 0%, transparent 55%),
+    linear-gradient(160deg, #10000a 0%, #180010 40%, #13000c 100%);
+}
+
+/* ==========================================================================
+   THEME 18 — Earth Terracotta (Warm natural clay)
+   ========================================================================== */
+[data-theme-id="18"] {
+  --rfs-gold-1: #fcd5b0; --rfs-gold-2: #d87b4a; --rfs-gold-3: #a0522d;
+  --rfs-maroon-1: #7c3510; --rfs-maroon-2: #5c2a0e; --rfs-dark: #180a03;
+}
+[data-theme-id="18"] body.theme-enabled {
+  background-image:
+    radial-gradient(ellipse at 70% 20%, rgba(216,123,74,0.25) 0%, transparent 50%),
+    radial-gradient(ellipse at 20% 80%, rgba(124,53,16,0.20) 0%, transparent 50%),
+    linear-gradient(135deg, #fff6f0 0%, #faeee4 50%, #fef5ef 100%);
+}
+[data-theme-id="18"][data-theme="dark"] body.theme-enabled {
+  background-image:
+    radial-gradient(ellipse at 70% 20%, rgba(216,123,74,0.14) 0%, transparent 50%),
+    radial-gradient(ellipse at 20% 80%, rgba(124,53,16,0.14) 0%, transparent 50%),
+    linear-gradient(135deg, #0d0500 0%, #180a03 50%, #120703 100%);
+}
+
+/* ==========================================================================
+   THEME 19 — Neon Cyber (Vibrant electric green/cyan)
+   ========================================================================== */
+[data-theme-id="19"] {
+  --rfs-gold-1: #86efac; --rfs-gold-2: #22c55e; --rfs-gold-3: #16a34a;
+  --rfs-maroon-1: #06b6d4; --rfs-maroon-2: #0891b2; --rfs-dark: #012030;
+}
+[data-theme-id="19"] body.theme-enabled {
+  background-image:
+    radial-gradient(ellipse at 20% 20%, rgba(34,197,94,0.22) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 80%, rgba(6,182,212,0.22) 0%, transparent 50%),
+    linear-gradient(135deg, #f0fff7 0%, #e6fff5 50%, #f0fffd 100%);
+}
+[data-theme-id="19"][data-theme="dark"] body.theme-enabled {
+  background-image:
+    radial-gradient(ellipse at 20% 20%, rgba(34,197,94,0.22) 0%, transparent 45%),
+    radial-gradient(ellipse at 80% 80%, rgba(6,182,212,0.22) 0%, transparent 45%),
+    linear-gradient(135deg, #000d06 0%, #00141a 50%, #000e11 100%);
+}
+
+/* ==========================================================================
+   THEME 20 — Sakura Night (Dark cherry blossom)
+   ========================================================================== */
+[data-theme-id="20"] {
+  --rfs-gold-1: #fda4af; --rfs-gold-2: #f43f5e; --rfs-gold-3: #be123c;
+  --rfs-maroon-1: #9f1239; --rfs-maroon-2: #4c0519; --rfs-dark: #200007;
+}
+[data-theme-id="20"] body.theme-enabled {
+  background-image:
+    radial-gradient(ellipse at 25% 25%, rgba(244,63,94,0.25) 0%, transparent 50%),
+    radial-gradient(ellipse at 75% 75%, rgba(159,18,57,0.20) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 50%, rgba(253,164,175,0.10) 0%, transparent 70%),
+    linear-gradient(135deg, #fff0f2 0%, #ffe8ec 50%, #fff5f7 100%);
+}
+[data-theme-id="20"][data-theme="dark"] body.theme-enabled {
+  background-image:
+    radial-gradient(ellipse at 25% 25%, rgba(244,63,94,0.22) 0%, transparent 50%),
+    radial-gradient(ellipse at 75% 75%, rgba(159,18,57,0.18) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 50%, rgba(253,164,175,0.04) 0%, transparent 70%),
+    linear-gradient(135deg, #10000403 0%, #1a0008 50%, #150006 100%);
+}

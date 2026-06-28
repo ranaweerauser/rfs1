@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Ranaweera Family Super — Your Trusted Family Supermarket</title>
+<meta name="description" content="Ranaweera Family Super — Nittambuwa's trusted supermarket. Quality groceries, fresh produce, Cash on Delivery & Self Pickup."/>
+<link rel="icon" href="assets/images/logo.jpg"/>
+<link rel="stylesheet" href="assets/css/style.css"/>
+<link rel="stylesheet" href="assets/css/themes.css"/>
+</head>
+<body>
+
+<!-- LOADING OVERLAY -->
+<div id="rfs-loading-overlay">
+  <div class="rfs-loader">
+    <div class="rfs-loader-ring"></div>
+    <div class="rfs-loader-ring rfs-loader-ring2"></div>
+    <div class="rfs-loader-dot"></div>
+  </div>
+  <div class="rfs-loading-text">Loading...</div>
+</div>
+
+<!-- MAINTENANCE SCREEN -->
+<div id="maintenance-screen" class="hidden" style="position:fixed;inset:0;z-index:999;background:var(--green-dark);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px;">
+  <img src="assets/images/logo.jpg" style="width:90px;height:90px;border-radius:16px;margin-bottom:20px;" alt="logo"/>
+  <h1 style="color:#fff;">We'll be right back!</h1>
+  <p id="maintenance-message" style="max-width:420px;opacity:.85;"></p>
+</div>
+
+<header id="app-header" class="site-header"></header>
+
+<main id="main-content">
+
+<!-- ═══ HERO SECTION ═══ -->
+<section class="hero" id="hero-section">
+  <div class="container hero-content">
+    <p class="hero-label">Proudly Serving Nittambuwa</p>
+    <h1 class="hero-title">
+      Your Family.<br/>
+      Your Community.<br/>
+      <span class="highlight">Our Commitment.</span>
+    </h1>
+    <p class="hero-subtitle">Ranaweera Family Super is Nittambuwa's trusted supermarket for quality products, great value, and friendly service — every single day.</p>
+    <div class="hero-buttons">
+      <a href="products.html" class="btn btn-primary btn-lg" id="hero-explore-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+        Explore Categories
+      </a>
+      <a href="best-deals.html" class="btn btn-outline btn-lg" id="hero-deals-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M20.59 13.41 12 22 2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82Z"/><circle cx="7" cy="7" r="1.2" fill="currentColor" stroke="none"/></svg>
+        View Special Offers
+      </a>
+    </div>
+  </div>
+  <div id="hero-image-area"></div>
+  <div class="hero-badge" id="hero-badge">
+    <span>Proudly</span>
+    <span>Serving</span>
+    <strong>Nittambuwa</strong>
+    <span>with Care</span>
+    <span>&amp; Quality</span>
+  </div>
+  <!-- decorative brush strokes -->
+  <svg class="hero-brush hero-brush-tl" viewBox="0 0 200 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M0 0 Q60 40 20 100 Q-10 140 40 160 L0 160Z" fill="#f4a708" opacity=".5"/>
+    <path d="M30 0 Q100 20 70 80 Q50 120 90 160 L50 160Z" fill="#e85d04" opacity=".35"/>
+    <path d="M0 40 Q40 60 30 120 L0 130Z" fill="#1e40af" opacity=".3"/>
+  </svg>
+  <svg class="hero-brush hero-brush-br" viewBox="0 0 200 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M200 0 Q140 40 180 100 Q210 140 160 160 L200 160Z" fill="#1a5c3a" opacity=".45"/>
+    <path d="M170 0 Q100 20 130 80 Q150 120 110 160 L150 160Z" fill="#f4a708" opacity=".35"/>
+  </svg>
+</section>
+
+<!-- ═══ CATEGORIES SECTION ═══ -->
+<section class="section categories-section">
+  <div class="container text-center">
+    <span class="label-tag">Shop by Category</span>
+    <h2 class="section-title">Everything Your Family Needs</h2>
+    <div class="underline-green" style="margin:0 auto 10px;"></div>
+    <div class="cat-grid" id="categories-mount">
+      <div class="skeleton"></div><div class="skeleton"></div>
+      <div class="skeleton"></div><div class="skeleton"></div>
+      <div class="skeleton"></div><div class="skeleton"></div>
+    </div>
+    <div style="margin-top:28px;">
+      <a href="categories.html" class="btn btn-outline">View All Categories</a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ WHY SHOP WITH US ═══ -->
+<section class="why-shop">
+  <div class="container text-center">
+    <span class="label-tag">Why Shop With Us</span>
+    <h2 class="section-title" style="color:#fff;">Quality. Value. Trust.<br/>That's Our Promise.</h2>
+    <div class="underline-green" style="margin:0 auto 30px;background:var(--yellow);"></div>
+    <div class="grid grid-4" style="max-width:800px;margin:0 auto;">
+      <div class="why-card">
+        <div class="why-icon" style="background:#f4a708;">🏅</div>
+        <h4>Quality Products</h4>
+        <p>Carefully selected for your family's wellbeing.</p>
+      </div>
+      <div class="why-card">
+        <div class="why-icon" style="background:#1e40af;">🏷️</div>
+        <h4>Great Value</h4>
+        <p>Competitive prices you can rely on.</p>
+      </div>
+      <div class="why-card">
+        <div class="why-icon" style="background:#e85d04;">😊</div>
+        <h4>Friendly Service</h4>
+        <p>Our team is always ready to help.</p>
+      </div>
+      <div class="why-card">
+        <div class="why-icon" style="background:#2d7a52;">👥</div>
+        <h4>Local &amp; Trusted</h4>
+        <p>Proudly part of the Nittambuwa community.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ SPECIAL OFFERS STRIP ═══ -->
+<section class="section offers-section" id="offers-section">
+  <div class="container">
+    <div class="flex justify-between items-center" style="margin-bottom:24px;flex-wrap:wrap;gap:12px;">
+      <div>
+        <span class="label-tag">Special Offers</span>
+        <h2 class="section-title" style="margin:0;">Amazing Deals, Every Week!</h2>
+      </div>
+      <a href="best-deals.html" class="btn btn-outline">View All Offers</a>
+    </div>
+    <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px;" id="offers-mount">
+      <div class="skeleton"></div><div class="skeleton"></div>
+      <div class="skeleton"></div><div class="skeleton"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ STORE INFO ═══ -->
+<section class="section-sm" style="background:var(--gray-50);">
+  <div class="container">
+    <div class="card" style="overflow:hidden;">
+      <div class="store-info-grid" id="store-info-grid">
+        <!-- Hours -->
+        <div class="store-info-col">
+          <div class="store-info-head">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+            <h3>Store Hours</h3>
+          </div>
+          <div class="hours-row"><span>Monday – Friday</span><span>7:00 AM – 9:00 PM</span></div>
+          <div class="hours-row"><span>Saturday</span><span>7:00 AM – 9:00 PM</span></div>
+          <div class="hours-row"><span>Sunday</span><span>7:00 AM – 8:00 PM</span></div>
+          <div class="hours-row"><span>Public Holidays</span><span>7:00 AM – 8:00 PM</span></div>
+          <div style="margin-top:14px;background:var(--green-light);padding:10px 14px;border-radius:8px;font-size:13px;color:var(--green-dark);font-weight:600;">
+            🛒 We're open every day to serve you better!
+          </div>
+        </div>
+        <!-- Location -->
+        <div class="store-info-col" id="location-col">
+          <div class="store-info-head">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7Z"/><circle cx="12" cy="9" r="2.5"/></svg>
+            <h3>Our Location</h3>
+          </div>
+          <p id="store-address" class="muted" style="font-size:13.5px;"></p>
+          <div class="map-thumb" id="map-mount"></div>
+          <a href="#" id="get-directions-btn" target="_blank" class="btn btn-primary btn-sm" style="margin-top:10px;">
+            Get Directions →
+          </a>
+        </div>
+        <!-- Contact -->
+        <div class="store-info-col" id="contact-col">
+          <div class="store-info-head">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4h3l2 5-2.5 1.5a11 11 0 0 0 5 5L14 13l5 2v3a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2Z"/></svg>
+            <h3>Contact Us</h3>
+          </div>
+          <div id="contact-details"></div>
+          <div style="margin-top:14px;background:var(--orange-light);padding:10px 14px;border-radius:8px;font-size:12.5px;color:var(--orange);font-weight:600;display:flex;align-items:center;gap:8px;">
+            🚚 Bulk Orders &amp; Home Delivery Available!
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ COMMUNITY SECTION ═══ -->
+<section class="section community-section">
+  <div class="container">
+    <div class="community-grid">
+      <div>
+        <span class="label-tag">Our Community</span>
+        <h2 class="section-title">More Than a Supermarket,<br/>We're Family.</h2>
+        <div class="underline-green"></div>
+        <p class="muted" style="font-size:14.5px;line-height:1.8;">We believe in building lasting relationships with our customers and giving back to our community. Visit us today and experience the difference.</p>
+        <a href="about.html" class="btn btn-primary" style="margin-top:16px;">Learn More About Us</a>
+      </div>
+      <div class="team-photo">
+        <img src="assets/images/logo.jpg" alt="Our Team" style="width:100%;height:100%;object-fit:cover;" id="team-photo"/>
+      </div>
+      <div class="testimonial-card">
+        <div class="testimonial-quote">"</div>
+        <p class="testimonial-text">Ranaweera Family Super is our go-to place. Friendly staff, good prices, and always fresh products!</p>
+        <div class="testimonial-author">— Nimal &amp; Family, Nittambuwa</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<div id="app-floats"></div>
+<nav id="app-bottomnav"></nav>
+<footer id="app-footer" class="site-footer"></footer>
+
+<script type="module">
+  import "./assets/js/layout.js";
+  import { subscribeSettings } from "./assets/js/settings.js";
+  import { subscribeCategories, subscribeProductsPage } from "./assets/js/products.js";
+  import { escapeHtml, formatCurrency } from "./assets/js/ui-helpers.js";
+  import { getEffectiveBasePrice, getUnitMeta, getDefaultQuantity } from "./assets/js/pricing.js";
+  import { addToCart } from "./assets/js/cart.js";
+
+  // Hide loading overlay once Firebase settings load
+  let overlayHidden = false;
+  function hideLoader() {
+    if (overlayHidden) return;
+    overlayHidden = true;
+    const ov = document.getElementById("rfs-loading-overlay");
+    if (ov) { ov.classList.add("hidden"); setTimeout(() => ov.remove(), 500); }
+  }
+
+  // Maintenance check + settings-driven content
+  subscribeSettings((settings) => {
+    hideLoader();
+    const screen = document.getElementById("maintenance-screen");
+    const main   = document.getElementById("main-content");
+    if (settings.maintenanceMode) {
+      screen.classList.remove("hidden");
+      document.getElementById("maintenance-message").textContent = settings.maintenanceMessage;
+      main.style.display = "none";
+      return;
+    }
+    screen.classList.add("hidden");
+    main.style.display = "";
+
+    // Store address
+    const addrEl = document.getElementById("store-address");
+    if (addrEl) addrEl.textContent = settings.address;
+
+    // Map
+    const mapMount = document.getElementById("map-mount");
+    if (mapMount && settings.mapEmbedUrl) {
+      mapMount.innerHTML = `<iframe src="${settings.mapEmbedUrl}" width="100%" height="90" loading="lazy" style="border:none;"></iframe>`;
+    }
+
+    // Directions link
+    const dirBtn = document.getElementById("get-directions-btn");
+    if (dirBtn && settings.address) {
+      dirBtn.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(settings.address)}`;
+    }
+
+    // Contact details
+    const contactEl = document.getElementById("contact-details");
+    if (contactEl) {
+      contactEl.innerHTML = `
+        <div class="contact-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M5 4h3l2 5-2.5 1.5a11 11 0 0 0 5 5L14 13l5 2v3a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2Z"/></svg><span>${escapeHtml(settings.phone)}</span></div>
+        <div class="contact-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 7 10-7"/></svg><span>${escapeHtml(settings.email)}</span></div>
+        ${settings.social?.facebook ? `<div class="contact-row"><svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M22 12a10 10 0 1 0-11.6 9.9v-7H7.9V12h2.5V9.8c0-2.5 1.5-3.9 3.8-3.9l2.2.2v2.5h-1.3c-1.2 0-1.6.8-1.6 1.6V12h2.8l-.4 2.9h-2.4v7A10 10 0 0 0 22 12Z"/></svg><span>${escapeHtml(settings.social.facebook.replace("https://","").replace("www.","").split("/")[0])}</span></div>` : ""}
+        ${settings.social?.instagram ? `<div class="contact-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg><span>@${escapeHtml(settings.social.instagram.replace(/.*instagram\.com\//,"").replace(/\/?$/,""))}</span></div>` : ""}
+      `;
+    }
+  });
+
+  // Safety loader timeout
+  setTimeout(hideLoader, 4000);
+
+  // CATEGORIES
+  subscribeCategories((cats) => {
+    const mount = document.getElementById("categories-mount");
+    if (!mount) return;
+    const visible = cats.filter((c) => c.visible !== false);
+    if (!visible.length) {
+      mount.innerHTML = `<div class="text-center muted" style="grid-column:1/-1;padding:20px;">Categories will appear here soon.</div>`;
+      return;
+    }
+    mount.innerHTML = visible.map((c) => `
+      <a href="products.html?category=${c.id}" class="cat-card">
+        <div class="cat-icon-wrap" style="${getCatColor(c.name)}">
+          ${c.imageUrl
+            ? `<img src="${c.imageUrl}" alt="${escapeHtml(c.name)}" />`
+            : `<span style="font-size:28px;">${c.icon || "🛒"}</span>`}
+        </div>
+        <div class="cat-card-name">${escapeHtml(c.name)}</div>
+        <div class="cat-arrow">→</div>
+      </a>`).join("");
+  });
+
+  // Color palette for category icons (cycles through brand colors)
+  const catColors = [
+    "background:#e8f5ee;",  // green
+    "background:#fff3e8;",  // orange
+    "background:#e0f2fe;",  // blue
+    "background:#fce7f3;",  // pink
+    "background:#fff9e6;",  // yellow
+    "background:#f3e8ff;",  // purple
+  ];
+  let colorIdx = 0;
+  const colorMap = {};
+  function getCatColor(name) {
+    if (!colorMap[name]) { colorMap[name] = catColors[colorIdx % catColors.length]; colorIdx++; }
+    return colorMap[name];
+  }
+
+  // SPECIAL OFFERS (products with discount OR bestDeals)
+  subscribeProductsPage({ pageSize: 60 }, ({ items }) => {
+    const mount = document.getElementById("offers-mount");
+    if (!mount) return;
+    const deals = (items || []).filter((p) => p.hasDiscount || p.bestDeals).slice(0, 6);
+    if (!deals.length) {
+      document.getElementById("offers-section").style.display = "none";
+      return;
+    }
+    mount.innerHTML = deals.map((p) => {
+      const ep = getEffectiveBasePrice(p);
+      const meta = getUnitMeta(p.unitType);
+      const saving = p.hasDiscount ? Math.round((1 - ep / p.basePrice) * 100) : 0;
+      return `
+      <div class="offer-card" data-id="${p.id}">
+        <div style="height:130px;overflow:hidden;border-radius:12px 12px 0 0;background:var(--gray-100);">
+          <img src="${p.images?.[0] || "assets/images/logo.jpg"}" alt="${escapeHtml(p.name)}" style="width:100%;height:130px;object-fit:cover;" />
+        </div>
+        <div class="offer-body">
+          ${saving > 0 ? `<span class="offer-save-badge">SAVE ${saving}%</span>` : `<span class="offer-save-badge" style="background:var(--green-dark);">DEAL</span>`}
+          <div class="offer-name">${escapeHtml(p.name)}</div>
+          <div style="display:flex;align-items:baseline;gap:8px;">
+            <span class="offer-price">${formatCurrency(ep)}</span>
+            ${p.hasDiscount ? `<span class="offer-old-price">${formatCurrency(p.basePrice)}</span>` : ""}
+          </div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:3px;">per ${meta.family==="weight"?"1Kg":meta.family==="volume"?"1L":"1 "+meta.label}</div>
+        </div>
+      </div>`;
+    }).join("");
+
+    mount.querySelectorAll(".offer-card").forEach((card) => {
+      card.style.cursor = "pointer";
+      card.onclick = () => { window.location.href = `product.html?id=${card.dataset.id}`; };
+    });
+  });
+</script>
+</body>
+</html>

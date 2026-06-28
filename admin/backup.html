@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Backup & Restore — Admin Panel</title>
+<link rel="icon" href="../assets/images/logo.jpg" />
+<link rel="stylesheet" href="../assets/css/style.css" />
+<link rel="stylesheet" href="../assets/css/themes.css" />
+<link rel="stylesheet" href="../assets/css/admin.css" />
+</head>
+<body>
+<div id="admin-root"></div>
+
+<script type="module">
+  import { initAdminLayout, setPageTitle } from "../assets/js/admin/admin-layout.js";
+  import { db, collection, getDocs, doc, setDoc, COL } from "../assets/js/firebase-config.js";
+  import { hasRole } from "../assets/js/auth.js";
+  import { toast } from "../assets/js/ui-helpers.js";
+
+  const session = initAdminLayout("backup.html");
+
+  if (session) {
+    setPageTitle("Backup & Restore");
+    if (!hasRole(session, "super_admin")) {
+      document.getElementById("admin-page-content").innerHTML = `<div class="empty-state"><div class="icon">🚫</div><p>Only Super Admins can access backups.</p></div>`;
+    } else {
+      document.getElementById("admin-page-content").innerHTML = `
+        <div class="card pad-24" style="max-width:620px;">
+          <h3>📦 Export Full Backup</h3>
+          <p class="muted" style="font-size:13px;">Downloads a JSON file containing your Products, Categories, Orders, Customers and Settings. Keep this safe — it does not include images (those stay on Cloudinary).</p>
+          <button class="btn btn-primary" id="backup-btn" style="margin-top:14px;">⬇️ Download Backup Now</button>
+        </div>
+
+        <div class="card pad-24" style="max-width:620px; margin-top:20px;">
+          <h3>♻️ Restore from Backup</h3>
+          <p class="muted" style="font-size:13px;">Upload a previously downloaded backup JSON file. <strong>Warning:</strong> This will overwrite matching records in your database.</p>
+          <input type="file" id="restore-input" accept="application/json" class="input" style="margin-top:10px;" />
+          <button class="btn btn-danger" id="restore-btn" style="margin-top:14px;">Restore from File</button>
+        </div>
+
+        <div class="card pad-24" style="max-width:620px; margin-top:20px; background:var(--bg-surface-2);">
+          <strong>💡 Automatic Backups</strong>
+          <p class="muted" style="font-size:13px; margin-top:6px;">For automatic scheduled backups, we recommend periodically exporting from this page (e.g. weekly) and saving the file to Google Drive or your computer.</p>
+        </div>
+      `;
+
+      document.getElementById("backup-btn").addEventListener("click", downloadBackup);
+      document.getElementById("restore-btn").addEventListener("click", restoreBackup);
+    }
+  }
+
+  async function downloadBackup() {
+    const btn = document.getElementById("backup-btn");
+    btn.disabled = true;
+    btn.textContent = "Preparing backup...";
+    try {
+      const collections = [COL.PRODUCTS, COL.CATEGORIES, COL.ORDERS, COL.CUSTOMERS, COL.SETTINGS, COL.COUPONS];
+      const backup = {};
+      for (const colName of collections) {
+        const snap = await getDocs(collection(db, colName));
+        backup[colName] = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      }
+      backup._meta = { exportedAt: new Date().toISOString(), store: "Ranaweera Family Super" };
+
+      const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `rfs-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast("✅ Backup downloaded successfully.", "success");
+    } catch (e) {
+      console.error(e);
+      toast("Backup failed.", "error");
+    }
+    btn.disabled = false;
+    btn.textContent = "⬇️ Download Backup Now";
+  }
+
+  async function restoreBackup() {
+    const file = document.getElementById("restore-input").files[0];
+    if (!file) return toast("Please select a backup file first.", "error");
+    if (!confirm("This will overwrite existing records with matching IDs. Continue?")) return;
+
+    const btn = document.getElementById("restore-btn");
+    btn.disabled = true;
+    btn.textContent = "Restoring...";
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      const collectionsToRestore = [COL.PRODUCTS, COL.CATEGORIES, COL.ORDERS, COL.CUSTOMERS, COL.SETTINGS, COL.COUPONS];
+      for (const colName of collectionsToRestore) {
+        if (!Array.isArray(data[colName])) continue;
+        for (const record of data[colName]) {
+          const { id, ...fields } = record;
+          await setDoc(doc(db, colName, id), fields, { merge: true });
+        }
+      }
+      toast("✅ Restore completed successfully.", "success");
+    } catch (e) {
+      console.error(e);
+      toast("Restore failed: invalid backup file.", "error");
+    }
+    btn.disabled = false;
+    btn.textContent = "Restore from File";
+  }
+</script>
+</body>
+</html>

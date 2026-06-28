@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Coupons — Admin Panel</title>
+<link rel="icon" href="../assets/images/logo.jpg" />
+<link rel="stylesheet" href="../assets/css/style.css" />
+<link rel="stylesheet" href="../assets/css/themes.css" />
+<link rel="stylesheet" href="../assets/css/admin.css" />
+</head>
+<body>
+<div id="admin-root"></div>
+
+<script type="module">
+  import { initAdminLayout, setPageTitle } from "../assets/js/admin/admin-layout.js";
+  import { db, collection, addDoc, doc, updateDoc, deleteDoc, onSnapshot, serverTimestamp, COL } from "../assets/js/firebase-config.js";
+  import { escapeHtml, formatDate, toast, openModal, closeModal } from "../assets/js/ui-helpers.js";
+
+  const session = initAdminLayout("coupons.html");
+
+  if (session) {
+    setPageTitle("Coupons & Promotions");
+    document.getElementById("admin-page-content").innerHTML = `
+      <div class="admin-toolbar">
+        <span class="muted">Manage discount codes for special offers and seasonal promotions.</span>
+        <button class="btn btn-primary" id="add-coupon-btn">+ Add Coupon</button>
+      </div>
+      <div class="admin-table-wrap pad-20">
+        <table class="simple-table">
+          <thead><tr><th>Code</th><th>Discount</th><th>Min Order</th><th>Expires</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="coupons-tbody"><tr><td colspan="6" class="center muted">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    `;
+
+    document.getElementById("add-coupon-btn").addEventListener("click", () => openCouponModal());
+
+    onSnapshot(collection(db, COL.COUPONS), (snap) => {
+      const coupons = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      const tbody = document.getElementById("coupons-tbody");
+      if (!coupons.length) {
+        tbody.innerHTML = `<tr><td colspan="6" class="center muted">No coupons yet.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = coupons.map((c) => `
+        <tr data-id="${c.id}">
+          <td><strong>${escapeHtml(c.code)}</strong></td>
+          <td>${c.discountType === "percent" ? c.discountValue + "%" : "Rs. " + c.discountValue}</td>
+          <td>Rs. ${c.minOrder || 0}</td>
+          <td>${c.expiresAt || "No expiry"}</td>
+          <td><span class="tag ${c.active !== false ? "tag-delivered" : "tag-cancelled"}">${c.active !== false ? "Active" : "Disabled"}</span></td>
+          <td>
+            <button class="btn btn-sm btn-outline edit-coupon-btn">Edit</button>
+            <button class="btn btn-sm btn-danger delete-coupon-btn">Delete</button>
+          </td>
+        </tr>`).join("");
+
+      tbody.querySelectorAll(".edit-coupon-btn").forEach((btn) => {
+        btn.onclick = () => openCouponModal(coupons.find((c) => c.id === btn.closest("tr").dataset.id));
+      });
+      tbody.querySelectorAll(".delete-coupon-btn").forEach((btn) => {
+        btn.onclick = async () => {
+          if (!confirm("Delete this coupon?")) return;
+          await deleteDoc(doc(db, COL.COUPONS, btn.closest("tr").dataset.id));
+          toast("Coupon deleted.", "success");
+        };
+      });
+    });
+  }
+
+  function openCouponModal(coupon = null) {
+    const isEdit = !!coupon;
+    openModal(`
+      <h3>${isEdit ? "Edit Coupon" : "Add Coupon"}</h3>
+      <div class="field"><label>Coupon Code *</label><input type="text" class="input" id="cp-code" value="${escapeHtml(coupon?.code || "")}" style="text-transform:uppercase;" /></div>
+      <div class="flex gap-12">
+        <div class="field" style="flex:1;"><label>Discount Type</label>
+          <select class="input" id="cp-type">
+            <option value="percent" ${coupon?.discountType === "percent" ? "selected" : ""}>Percentage (%)</option>
+            <option value="fixed" ${coupon?.discountType === "fixed" ? "selected" : ""}>Fixed Amount (Rs.)</option>
+          </select>
+        </div>
+        <div class="field" style="flex:1;"><label>Discount Value</label><input type="number" class="input" id="cp-value" value="${coupon?.discountValue ?? ""}" /></div>
+      </div>
+      <div class="field"><label>Minimum Order Amount (Rs.)</label><input type="number" class="input" id="cp-minorder" value="${coupon?.minOrder ?? 0}" /></div>
+      <div class="field"><label>Expiry Date (optional)</label><input type="date" class="input" id="cp-expiry" value="${coupon?.expiresAt || ""}" /></div>
+      <label class="flex items-center gap-8"><input type="checkbox" id="cp-active" ${coupon?.active !== false ? "checked" : ""} /> Active</label>
+      <div class="flex gap-12" style="margin-top:18px;">
+        <button class="btn btn-primary" id="save-coupon-btn" style="flex:1;">${isEdit ? "Save Changes" : "Add Coupon"}</button>
+        <button class="btn btn-outline" id="cancel-coupon-btn">Cancel</button>
+      </div>
+    `);
+
+    document.getElementById("cancel-coupon-btn").addEventListener("click", closeModal);
+    document.getElementById("save-coupon-btn").addEventListener("click", async () => {
+      const code = document.getElementById("cp-code").value.trim().toUpperCase();
+      if (!code) return toast("Coupon code is required.", "error");
+      const payload = {
+        code,
+        discountType: document.getElementById("cp-type").value,
+        discountValue: Number(document.getElementById("cp-value").value) || 0,
+        minOrder: Number(document.getElementById("cp-minorder").value) || 0,
+        expiresAt: document.getElementById("cp-expiry").value || null,
+        active: document.getElementById("cp-active").checked
+      };
+      try {
+        if (isEdit) await updateDoc(doc(db, COL.COUPONS, coupon.id), payload);
+        else await addDoc(collection(db, COL.COUPONS), { ...payload, createdAt: serverTimestamp() });
+        toast(`Coupon ${isEdit ? "updated" : "added"}.`, "success");
+        closeModal();
+      } catch (e) {
+        toast("Failed to save coupon.", "error");
+      }
+    });
+  }
+</script>
+</body>
+</html>

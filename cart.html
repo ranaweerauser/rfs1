@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>My Cart — Ranaweera Family Super</title>
+<link rel="icon" href="assets/images/logo.jpg"/>
+<link rel="stylesheet" href="assets/css/style.css"/>
+<link rel="stylesheet" href="assets/css/themes.css"/>
+<style>
+.cart-layout{display:grid;grid-template-columns:1fr 340px;gap:24px;align-items:start;}
+@media(max-width:820px){.cart-layout{grid-template-columns:1fr;}}
+.cart-row{display:grid;grid-template-columns:64px 1fr auto;gap:14px;align-items:center;padding:14px 0;border-bottom:1px solid var(--border-soft);}
+.cart-row:last-child{border-bottom:none;}
+.cart-row img{width:64px;height:64px;object-fit:cover;border-radius:10px;background:var(--gray-100);}
+.sum-row{display:flex;justify-content:space-between;padding:8px 0;font-size:14.5px;}
+.sum-row.total{font-weight:800;font-size:18px;border-top:2px solid var(--border-soft);margin-top:8px;padding-top:14px;color:var(--green-dark);}
+.qty-mini{display:flex;align-items:center;background:var(--gray-100);border-radius:999px;overflow:hidden;width:fit-content;}
+.qty-mini button{width:30px;height:30px;background:none;border:none;font-size:17px;font-weight:700;cursor:pointer;color:var(--text-main);}
+.qty-mini span{min-width:52px;text-align:center;font-weight:700;font-size:13.5px;}
+</style>
+</head>
+<body>
+<header id="app-header" class="site-header"></header>
+<div class="page-hero"><h1>Shopping Cart</h1></div>
+<main class="container section">
+  <div class="cart-layout">
+    <div class="card pad-24" id="cart-items-mount"></div>
+    <div class="card pad-24">
+      <h3 style="margin-bottom:18px;">Order Summary</h3>
+      <div class="sum-row"><span>Subtotal</span><span id="sum-subtotal">Rs. 0.00</span></div>
+      <div class="sum-row"><span>Delivery Fee</span><span id="sum-delivery">Rs. 0.00</span></div>
+      <div id="min-warn" class="hidden" style="background:var(--orange-light);color:var(--orange);padding:10px;border-radius:8px;font-size:12.5px;margin:10px 0;font-weight:600;"></div>
+      <div class="sum-row total"><span>Total</span><span id="sum-total">Rs. 0.00</span></div>
+      <a href="checkout.html" class="btn btn-primary btn-block btn-lg" id="checkout-btn" style="margin-top:18px;">Proceed to Checkout →</a>
+      <a href="products.html" class="btn btn-ghost btn-block" style="margin-top:10px;">Continue Shopping</a>
+    </div>
+  </div>
+</main>
+<div id="app-floats"></div><nav id="app-bottomnav"></nav>
+<footer id="app-footer" class="site-footer"></footer>
+<script type="module">
+  import "./assets/js/layout.js";
+  import { onCartChange, updateCartQty, removeFromCart, cartTotals, meetsMinimumOrder, cartLinePrice, cartLineLabel } from "./assets/js/cart.js";
+  import { getCachedSettings, subscribeSettings } from "./assets/js/settings.js";
+  import { escapeHtml, formatCurrency } from "./assets/js/ui-helpers.js";
+  import { getStepperConfig } from "./assets/js/pricing.js";
+
+  function render(items) {
+    const mount = document.getElementById("cart-items-mount");
+    if (!items.length) {
+      mount.innerHTML = `<div class="empty-state"><div class="icon">🛒</div><p>Your cart is empty.</p><a href="products.html" class="btn btn-primary" style="margin-top:16px;">Start Shopping</a></div>`;
+    } else {
+      mount.innerHTML = `<h3 style="margin-bottom:18px;">Your Items (${items.length})</h3>` + items.map((line) => {
+        const { step, min, max } = getStepperConfig(line.unitType);
+        return `
+        <div class="cart-row" data-pid="${line.productId}">
+          <img src="${line.image||"assets/images/logo.jpg"}" alt="${escapeHtml(line.name)}"/>
+          <div>
+            <div style="font-weight:700;margin-bottom:4px;">${escapeHtml(line.name)}</div>
+            <div class="qty-mini">
+              <button class="qty-dec">−</button>
+              <span>${cartLineLabel(line)}</span>
+              <button class="qty-inc">+</button>
+            </div>
+          </div>
+          <div style="text-align:right;">
+            <div class="price" style="font-size:16px;">${formatCurrency(cartLinePrice(line))}</div>
+            <button class="btn btn-sm btn-danger" style="margin-top:8px;padding:5px 12px;" onclick="this.closest('.cart-row').querySelector('.remove-trigger').click()">Remove</button>
+            <button class="remove-trigger" style="display:none;"></button>
+          </div>
+        </div>`;
+      }).join("");
+
+      mount.querySelectorAll(".cart-row").forEach((row) => {
+        const pid = row.dataset.pid;
+        const line = items.find((i) => i.productId === pid);
+        const { step, min } = getStepperConfig(line.unitType);
+        row.querySelector(".qty-dec").onclick = () => updateCartQty(pid, Math.max(min-step, line.rawQty - step));
+        row.querySelector(".qty-inc").onclick = () => updateCartQty(pid, line.rawQty + step);
+        row.querySelector(".remove-trigger").onclick = () => removeFromCart(pid);
+      });
+    }
+    updateSummary();
+  }
+
+  function updateSummary() {
+    const tot = cartTotals("delivery");
+    document.getElementById("sum-subtotal").textContent = formatCurrency(tot.subtotal);
+    document.getElementById("sum-delivery").textContent = tot.deliveryFee===0?"FREE ✅":formatCurrency(tot.deliveryFee);
+    document.getElementById("sum-total").textContent = formatCurrency(tot.total);
+    const warn = document.getElementById("min-warn");
+    const btn = document.getElementById("checkout-btn");
+    const s = getCachedSettings();
+    if (!meetsMinimumOrder() && tot.subtotal > 0) {
+      warn.classList.remove("hidden");
+      warn.textContent = `⚠️ Minimum order: ${formatCurrency(s.minOrderAmount)}`;
+      btn.style.opacity = ".5"; btn.style.pointerEvents = "none";
+    } else {
+      warn.classList.add("hidden");
+      btn.style.opacity = ""; btn.style.pointerEvents = "";
+    }
+    if (tot.subtotal === 0) { btn.style.opacity = ".5"; btn.style.pointerEvents = "none"; }
+  }
+
+  subscribeSettings(() => updateSummary());
+  onCartChange(render);
+</script>
+</body>
+</html>

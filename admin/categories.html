@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Categories — Admin Panel</title>
+<link rel="icon" href="../assets/images/logo.jpg" />
+<link rel="stylesheet" href="../assets/css/style.css" />
+<link rel="stylesheet" href="../assets/css/themes.css" />
+<link rel="stylesheet" href="../assets/css/admin.css" />
+</head>
+<body>
+<div id="admin-root"></div>
+
+<script type="module">
+  import { initAdminLayout, setPageTitle } from "../assets/js/admin/admin-layout.js";
+  import { subscribeCategories, addCategory, updateCategory, deleteCategory, SUPERMARKET_CATEGORY_PRESETS } from "../assets/js/products.js";
+  import { uploadToCloudinary } from "../assets/js/cloudinary.js";
+  import { escapeHtml, toast, openModal, closeModal } from "../assets/js/ui-helpers.js";
+
+  const session = initAdminLayout("categories.html");
+  let existingNames = new Set();
+
+  if (session) {
+    setPageTitle("Category Management");
+    document.getElementById("admin-page-content").innerHTML = `
+      <div class="card pad-20" style="margin-bottom:20px;">
+        <h3>⚡ Quick-Add Supermarket Categories</h3>
+        <p class="muted" style="font-size:13px; margin-bottom:14px;">Click any category below to instantly add it with its icon — perfect for setting up your full supermarket catalog in seconds.</p>
+        <div class="flex gap-10 flex-wrap" id="preset-list"></div>
+      </div>
+
+      <div class="admin-toolbar">
+        <span class="muted">Use the sort order field to control display order.</span>
+        <button class="btn btn-primary" id="add-cat-btn">+ Add Custom Category</button>
+      </div>
+      <div class="admin-table-wrap pad-20">
+        <table class="simple-table">
+          <thead><tr><th>Icon</th><th>Name</th><th>Sort Order</th><th>Visible</th><th>Actions</th></tr></thead>
+          <tbody id="cat-tbody"><tr><td colspan="5" class="center muted">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    `;
+
+    document.getElementById("preset-list").innerHTML = SUPERMARKET_CATEGORY_PRESETS.map((p) => `
+      <button class="btn btn-sm btn-outline preset-btn" data-name="${escapeHtml(p.name)}" data-icon="${p.icon}">${p.icon} ${escapeHtml(p.name)}</button>
+    `).join("");
+
+    document.getElementById("preset-list").querySelectorAll(".preset-btn").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        if (existingNames.has(btn.dataset.name.toLowerCase())) {
+          return toast(`"${btn.dataset.name}" already exists.`, "error");
+        }
+        btn.disabled = true;
+        try {
+          await addCategory({ name: btn.dataset.name, icon: btn.dataset.icon, sortOrder: Date.now() });
+          toast(`"${btn.dataset.name}" added!`, "success");
+        } catch {
+          toast("Failed to add category.", "error");
+        }
+        btn.disabled = false;
+      });
+    });
+
+    document.getElementById("add-cat-btn").addEventListener("click", () => openCategoryModal());
+
+    subscribeCategories((cats) => {
+      existingNames = new Set(cats.map((c) => c.name.toLowerCase()));
+      const tbody = document.getElementById("cat-tbody");
+      if (!cats.length) {
+        tbody.innerHTML = `<tr><td colspan="5" class="center muted">No categories yet. Use Quick-Add above or add a custom one!</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = cats.map((c) => `
+        <tr data-id="${c.id}">
+          <td>${c.imageUrl ? `<img class="product-thumb-mini" src="${c.imageUrl}" />` : `<span style="font-size:22px;">${c.icon || "🛒"}</span>`}</td>
+          <td>${escapeHtml(c.name)}</td>
+          <td>${c.sortOrder ?? 0}</td>
+          <td><span class="tag ${c.visible !== false ? "tag-delivered" : "tag-cancelled"}">${c.visible !== false ? "Visible" : "Hidden"}</span></td>
+          <td>
+            <button class="btn btn-sm btn-outline edit-cat-btn">Edit</button>
+            <button class="btn btn-sm btn-danger delete-cat-btn">Delete</button>
+          </td>
+        </tr>`).join("");
+
+      tbody.querySelectorAll(".edit-cat-btn").forEach((btn) => {
+        btn.onclick = () => {
+          const id = btn.closest("tr").dataset.id;
+          openCategoryModal(cats.find((c) => c.id === id));
+        };
+      });
+      tbody.querySelectorAll(".delete-cat-btn").forEach((btn) => {
+        btn.onclick = async () => {
+          if (!confirm("Delete this category? Products in it will remain but show no category.")) return;
+          await deleteCategory(btn.closest("tr").dataset.id);
+          toast("Category deleted.", "success");
+        };
+      });
+    });
+  }
+
+  const ICON_CHOICES = ["🥦","🍎","🌾","🫘","🌶️","🫙","🥚","🥩","🍗","🐟","🍞","🥤","☕","🍿","🍪","🧊","🍜","🍅","🍼","🧴","💊","🧹","🧺","🍽️","🐾","✏️","🛒"];
+
+  function openCategoryModal(category = null) {
+    const isEdit = !!category;
+    let imageUrl = category?.imageUrl || "";
+    let selectedIcon = category?.icon || "🛒";
+
+    openModal(`
+      <h3>${isEdit ? "Edit Category" : "Add Category"}</h3>
+      <div class="field"><label>Category Name *</label><input type="text" class="input" id="cat-name" value="${escapeHtml(category?.name || "")}" /></div>
+      <div class="field"><label>Sort Order</label><input type="number" class="input" id="cat-sort" value="${category?.sortOrder ?? 0}" /></div>
+
+      <div class="field">
+        <label>Icon (used if no image is uploaded)</label>
+        <div class="flex gap-8 flex-wrap" id="icon-picker">
+          ${ICON_CHOICES.map((ic) => `<button type="button" class="btn btn-sm icon-choice-btn ${ic === selectedIcon ? "btn-primary" : "btn-outline"}" data-icon="${ic}" style="font-size:16px;">${ic}</button>`).join("")}
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Category Image (optional — overrides icon)</label>
+        <div class="image-upload-box" id="cat-image-box">📷 Click to upload image</div>
+        <input type="file" id="cat-image-input" accept="image/*" style="display:none;" />
+        <div class="image-preview-grid" id="cat-image-preview"></div>
+      </div>
+      <label class="flex items-center gap-8"><input type="checkbox" id="cat-visible" ${category?.visible !== false ? "checked" : ""} /> Visible on website</label>
+      <div class="flex gap-12" style="margin-top:18px;">
+        <button class="btn btn-primary" id="save-cat-btn" style="flex:1;">${isEdit ? "Save Changes" : "Add Category"}</button>
+        <button class="btn btn-outline" id="cancel-cat-btn">Cancel</button>
+      </div>
+    `);
+
+    document.querySelectorAll(".icon-choice-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        selectedIcon = btn.dataset.icon;
+        document.querySelectorAll(".icon-choice-btn").forEach((b) => b.className = `btn btn-sm icon-choice-btn ${b.dataset.icon === selectedIcon ? "btn-primary" : "btn-outline"}`);
+      });
+    });
+
+    function renderPreview() {
+      document.getElementById("cat-image-preview").innerHTML = imageUrl
+        ? `<div class="preview-item"><img src="${imageUrl}" /><button class="remove-img" id="remove-cat-img">✕</button></div>` : "";
+      const removeBtn = document.getElementById("remove-cat-img");
+      if (removeBtn) removeBtn.onclick = () => { imageUrl = ""; renderPreview(); };
+    }
+    renderPreview();
+
+    document.getElementById("cat-image-box").addEventListener("click", () => document.getElementById("cat-image-input").click());
+    document.getElementById("cat-image-input").addEventListener("change", async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const box = document.getElementById("cat-image-box");
+      box.textContent = "Uploading...";
+      try {
+        const result = await uploadToCloudinary(file);
+        imageUrl = result.url;
+      } catch (err) {
+        toast(err.message, "error");
+      }
+      box.textContent = "📷 Click to upload image";
+      renderPreview();
+    });
+
+    document.getElementById("cancel-cat-btn").addEventListener("click", closeModal);
+    document.getElementById("save-cat-btn").addEventListener("click", async () => {
+      const name = document.getElementById("cat-name").value.trim();
+      if (!name) return toast("Category name is required.", "error");
+      const payload = {
+        name,
+        sortOrder: Number(document.getElementById("cat-sort").value) || 0,
+        imageUrl,
+        icon: selectedIcon,
+        visible: document.getElementById("cat-visible").checked
+      };
+      try {
+        if (isEdit) await updateCategory(category.id, payload);
+        else await addCategory(payload);
+        toast(`Category ${isEdit ? "updated" : "added"} successfully.`, "success");
+        closeModal();
+      } catch (e) {
+        toast("Failed to save category.", "error");
+      }
+    });
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Homepage Builder — Admin Panel</title>
+<link rel="icon" href="../assets/images/logo.jpg" />
+<link rel="stylesheet" href="../assets/css/style.css" />
+<link rel="stylesheet" href="../assets/css/themes.css" />
+<link rel="stylesheet" href="../assets/css/admin.css" />
+</head>
+<body>
+<div id="admin-root"></div>
+
+<script type="module">
+  import { initAdminLayout, setPageTitle } from "../assets/js/admin/admin-layout.js";
+  import { subscribeSettings } from "../assets/js/settings.js";
+  import { db, doc, setDoc, COL, SETTINGS_DOC_ID } from "../assets/js/firebase-config.js";
+  import { uploadToCloudinary } from "../assets/js/cloudinary.js";
+  import { escapeHtml, toast } from "../assets/js/ui-helpers.js";
+
+  const session = initAdminLayout("settings-homepage.html");
+  let banners = [];
+
+  if (session) {
+    setPageTitle("Homepage Builder");
+
+    subscribeSettings((settings) => {
+      banners = JSON.parse(JSON.stringify(settings.banners || []));
+      render();
+    });
+
+    function render() {
+      document.getElementById("admin-page-content").innerHTML = `
+        <div class="card pad-24" style="max-width:760px;">
+          <h3>Hero Banner Slider</h3>
+          <p class="muted" style="font-size:13px;">Add multiple banners to create a rotating slider on your homepage. Leave empty to use the default welcome banner.</p>
+          <div id="banner-list" style="margin-top:18px;"></div>
+          <button class="btn btn-outline" id="add-banner-btn" style="margin-top:10px;">+ Add Banner Slide</button>
+          <button class="btn btn-primary btn-block" id="save-banners-btn" style="margin-top:20px;">Save & Publish Live</button>
+        </div>
+      `;
+      renderBannerList();
+      document.getElementById("add-banner-btn").addEventListener("click", () => {
+        banners.push({ title: "", subtitle: "", buttonText: "Shop Now", link: "products.html", imageUrl: "" });
+        renderBannerList();
+      });
+      document.getElementById("save-banners-btn").addEventListener("click", saveBanners);
+    }
+
+    function renderBannerList() {
+      const mount = document.getElementById("banner-list");
+      if (!banners.length) {
+        mount.innerHTML = `<p class="muted">No custom banners yet — the default welcome banner is shown.</p>`;
+        return;
+      }
+      mount.innerHTML = banners.map((b, i) => `
+        <div class="card pad-16" style="margin-bottom:14px;">
+          <div class="flex justify-between items-center">
+            <strong>Slide ${i + 1}</strong>
+            <button class="btn btn-sm btn-danger remove-banner-btn" data-i="${i}">Remove</button>
+          </div>
+          <div class="field" style="margin-top:10px;"><label>Title</label><input type="text" class="input banner-title" data-i="${i}" value="${escapeHtml(b.title)}" /></div>
+          <div class="field"><label>Subtitle</label><input type="text" class="input banner-subtitle" data-i="${i}" value="${escapeHtml(b.subtitle)}" /></div>
+          <div class="flex gap-12">
+            <div class="field" style="flex:1;"><label>Button Text</label><input type="text" class="input banner-btntext" data-i="${i}" value="${escapeHtml(b.buttonText)}" /></div>
+            <div class="field" style="flex:1;"><label>Button Link</label><input type="text" class="input banner-link" data-i="${i}" value="${escapeHtml(b.link)}" /></div>
+          </div>
+          <div class="field">
+            <label>Background Image</label>
+            <div class="flex items-center gap-12">
+              ${b.imageUrl ? `<img src="${b.imageUrl}" style="width:80px;height:50px;object-fit:cover;border-radius:6px;" />` : ""}
+              <button type="button" class="btn btn-sm btn-outline upload-banner-img-btn" data-i="${i}">Upload Image</button>
+              <input type="file" class="banner-img-input" data-i="${i}" accept="image/*" style="display:none;" />
+            </div>
+          </div>
+        </div>`).join("");
+
+      mount.querySelectorAll(".remove-banner-btn").forEach((btn) => {
+        btn.onclick = () => { banners.splice(Number(btn.dataset.i), 1); renderBannerList(); };
+      });
+      mount.querySelectorAll(".banner-title").forEach((el) => el.onchange = () => banners[el.dataset.i].title = el.value);
+      mount.querySelectorAll(".banner-subtitle").forEach((el) => el.onchange = () => banners[el.dataset.i].subtitle = el.value);
+      mount.querySelectorAll(".banner-btntext").forEach((el) => el.onchange = () => banners[el.dataset.i].buttonText = el.value);
+      mount.querySelectorAll(".banner-link").forEach((el) => el.onchange = () => banners[el.dataset.i].link = el.value);
+      mount.querySelectorAll(".upload-banner-img-btn").forEach((btn) => {
+        btn.onclick = () => mount.querySelector(`.banner-img-input[data-i="${btn.dataset.i}"]`).click();
+      });
+      mount.querySelectorAll(".banner-img-input").forEach((input) => {
+        input.onchange = async (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+          try {
+            const result = await uploadToCloudinary(file);
+            banners[input.dataset.i].imageUrl = result.url;
+            toast("Image uploaded.", "success");
+            renderBannerList();
+          } catch (err) {
+            toast(err.message, "error");
+          }
+        };
+      });
+    }
+
+    async function saveBanners() {
+      const btn = document.getElementById("save-banners-btn");
+      btn.disabled = true;
+      btn.textContent = "Saving...";
+      try {
+        await setDoc(doc(db, COL.SETTINGS, SETTINGS_DOC_ID), { banners }, { merge: true });
+        toast("✅ Homepage banners updated live!", "success");
+      } catch (e) {
+        toast("Failed to save banners.", "error");
+      }
+      btn.disabled = false;
+      btn.textContent = "Save & Publish Live";
+    }
+  }
+</script>
+</body>
+</html>

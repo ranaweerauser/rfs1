@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>My Orders — Ranaweera Family Super</title>
+<link rel="icon" href="assets/images/logo.jpg"/>
+<link rel="stylesheet" href="assets/css/style.css"/>
+<link rel="stylesheet" href="assets/css/themes.css"/>
+<style>
+.order-card{margin-bottom:16px;}
+.tracker{display:flex;margin:18px 0;}
+.tracker-step{flex:1;text-align:center;position:relative;font-size:11px;color:var(--text-muted);}
+.tracker-step::before{content:'';width:100%;height:3px;background:var(--border-soft);position:absolute;top:11px;left:-50%;z-index:0;}
+.tracker-step:first-child::before{display:none;}
+.tracker-dot{width:24px;height:24px;border-radius:50%;background:var(--border-soft);display:flex;align-items:center;justify-content:center;margin:0 auto 6px;position:relative;z-index:1;font-size:12px;}
+.tracker-step.done .tracker-dot{background:var(--green-dark);color:#fff;}
+.tracker-step.done::before{background:var(--green-dark);}
+</style>
+</head>
+<body>
+<header id="app-header" class="site-header"></header>
+<div class="page-hero"><h1>My Orders</h1><p>Orders auto-delete after 7 days</p></div>
+<main class="container section" id="orders-main">
+  <div class="empty-state"><div class="spinner" style="margin:0 auto;"></div></div>
+</main>
+<div id="app-floats"></div><nav id="app-bottomnav"></nav>
+<footer id="app-footer" class="site-footer"></footer>
+<script type="module">
+  import "./assets/js/layout.js";
+  import { onAuthChange, loginWithGoogle } from "./assets/js/auth.js";
+  import { subscribeCustomerOrders, cancelOrderByCustomer, buildWhatsAppCancellationLink } from "./assets/js/orders.js";
+  import { escapeHtml, formatCurrency, formatDate, toast, playChime, openModal, closeModal } from "./assets/js/ui-helpers.js";
+
+  const main = document.getElementById("orders-main");
+  const STEPS = [
+    {key:"pending",label:"Received",icon:"📝"},
+    {key:"processing",label:"Processing",icon:"⚙️"},
+    {key:"ready",label:"Ready",icon:"📦"},
+    {key:"delivered",label:"Delivered",icon:"✅"}
+  ];
+  let timer = null;
+
+  onAuthChange((user) => {
+    if (!user) {
+      main.innerHTML = `
+        <div class="card pad-32 text-center" style="max-width:420px;margin:0 auto;">
+          <h3>Login to view your orders</h3>
+          <button class="btn btn-primary btn-block" id="ord-login" style="margin-top:14px;">Login with Google</button>
+        </div>`;
+      document.getElementById("ord-login").onclick = async () => { try { await loginWithGoogle(); } catch { toast("Login failed.","error"); } };
+      return;
+    }
+    subscribeCustomerOrders(user.uid, (orders) => {
+      if (!orders.length) {
+        main.innerHTML = `<div class="empty-state"><div class="icon">📦</div><p>No orders yet.</p><a href="products.html" class="btn btn-primary" style="margin-top:14px;">Start Shopping</a></div>`;
+        return;
+      }
+      main.innerHTML = orders.map(cardHtml).join("");
+      bindCancel(orders);
+      if (timer) clearInterval(timer);
+      timer = setInterval(() => tickCountdowns(orders), 1000);
+    });
+  });
+
+  function cardHtml(o) {
+    const si = STEPS.findIndex((s) => s.key===o.status);
+    const cancelled = o.status==="cancelled";
+    const canCancel = o.status==="pending" && Date.now()<(o.cancelDeadlineMs||0);
+    return `
+    <div class="card pad-20 order-card">
+      <div class="flex justify-between items-center" style="flex-wrap:wrap;gap:8px;">
+        <div>
+          <code style="font-family:monospace;font-size:11.5px;background:var(--gray-100);padding:3px 8px;border-radius:6px;">${escapeHtml(o.orderId)}</code>
+          <div class="muted" style="font-size:12.5px;margin-top:4px;">${formatDate(o.createdAt)}</div>
+        </div>
+        <span class="tag tag-${o.status}">${o.status.toUpperCase()}</span>
+      </div>
+      ${!cancelled?`<div class="tracker">${STEPS.map((s,i)=>`<div class="tracker-step ${i<=si?"done":""}"><div class="tracker-dot">${s.icon}</div><span>${s.label}</span></div>`).join("")}</div>`:`<p style="color:#dc2626;margin-top:12px;">❌ Cancelled${o.cancelReason?` — ${escapeHtml(o.cancelReason)}`:""}</p>`}
+      <div style="margin-top:10px;">${(o.items||[]).map((i)=>`<div class="muted" style="font-size:13px;">${escapeHtml(i.name)} (${escapeHtml(i.quantityLabel)})</div>`).join("")}</div>
+      <div class="flex justify-between items-center" style="margin-top:14px;flex-wrap:wrap;gap:10px;">
+        <strong style="font-size:16px;color:var(--green-dark);">Total: ${formatCurrency(o.total)}</strong>
+        ${canCancel?`<div class="flex items-center gap-8"><span class="muted cancel-cd" data-dl="${o.cancelDeadlineMs}" style="font-size:12px;font-weight:600;"></span><button class="btn btn-danger btn-sm cancel-btn" data-id="${o.id}">Cancel Order</button></div>`:""}
+      </div>
+    </div>`;
+  }
+
+  function tickCountdowns(orders) {
+    document.querySelectorAll(".cancel-cd").forEach((el) => {
+      const rem = Number(el.dataset.dl) - Date.now();
+      if (rem <= 0) { el.textContent = "Window closed"; el.closest(".flex")?.querySelector(".cancel-btn")?.remove(); return; }
+      const m = Math.floor(rem/60000), s = Math.floor((rem%60000)/1000);
+      el.textContent = `Cancel within ${m}:${String(s).padStart(2,"0")}`;
+    });
+  }
+
+  function bindCancel(orders) {
+    document.querySelectorAll(".cancel-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const o = orders.find((x) => x.id===btn.dataset.id);
+        openModal(`
+          <div style="border:2px solid #dc2626;background:#fef2f2;border-radius:14px;padding:24px;">
+            <h3 style="color:#dc2626;">⚠️ Cancel This Order?</h3>
+            <p style="margin:10px 0;">Order <strong>${escapeHtml(o.orderId)}</strong> will be cancelled and cannot be undone.</p>
+            <div class="flex gap-10" style="margin-top:18px;">
+              <button class="btn btn-danger" id="confirm-cancel" style="flex:1;">Yes, Cancel</button>
+              <button class="btn btn-ghost" id="keep-order">Keep Order</button>
+            </div>
+          </div>`);
+        document.getElementById("keep-order").onclick = closeModal;
+        document.getElementById("confirm-cancel").onclick = async () => {
+          try {
+            await cancelOrderByCustomer(o.id);
+            const waLink = buildWhatsAppCancellationLink(o);
+            closeModal(); playChime("cancel");
+            openModal(`
+              <div class="text-center" style="padding:24px;">
+                <div style="font-size:48px;margin-bottom:14px;">✅</div>
+                <h3 style="color:#dc2626;">Order Cancelled</h3>
+                <p class="muted" style="margin:10px 0;">Your order ${escapeHtml(o.orderId)} has been cancelled.</p>
+                <a href="${waLink}" target="_blank" class="btn btn-block" style="background:#25D366;color:#fff;margin-bottom:10px;">💬 Send Cancellation to WhatsApp</a>
+                <button class="btn btn-ghost btn-block" id="close-cancel">Close</button>
+              </div>`);
+            try { window.open(waLink,"_blank"); } catch {}
+            document.getElementById("close-cancel").onclick = closeModal;
+          } catch(e) { toast(e.message||"Could not cancel.","error"); closeModal(); }
+        };
+      });
+    });
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Reports — Admin Panel</title>
+<link rel="icon" href="../assets/images/logo.jpg" />
+<link rel="stylesheet" href="../assets/css/style.css" />
+<link rel="stylesheet" href="../assets/css/themes.css" />
+<link rel="stylesheet" href="../assets/css/admin.css" />
+</head>
+<body>
+<div id="admin-root"></div>
+
+<script type="module">
+  import { initAdminLayout, setPageTitle } from "../assets/js/admin/admin-layout.js";
+  import { db, collection, getDocs, COL } from "../assets/js/firebase-config.js";
+  import { escapeHtml, formatCurrency, toast } from "../assets/js/ui-helpers.js";
+
+  const session = initAdminLayout("reports.html");
+  let allOrders = [];
+
+  if (session) {
+    setPageTitle("Reports");
+    document.getElementById("admin-page-content").innerHTML = `
+      <div class="stat-grid">
+        <div class="stat-card"><span class="stat-icon">📅</span><span class="stat-value" id="r-today">—</span><span class="stat-label">Today's Orders</span></div>
+        <div class="stat-card"><span class="stat-icon">📆</span><span class="stat-value" id="r-week">—</span><span class="stat-label">This Week's Orders</span></div>
+        <div class="stat-card"><span class="stat-icon">🗓️</span><span class="stat-value" id="r-month">—</span><span class="stat-label">This Month's Orders</span></div>
+        <div class="stat-card"><span class="stat-icon">💰</span><span class="stat-value" id="r-revenue">—</span><span class="stat-label">Total Revenue (Delivered)</span></div>
+      </div>
+
+      <div class="admin-toolbar" style="margin-top:24px;">
+        <h3 style="margin:0;">Top Selling Products</h3>
+        <button class="btn btn-outline btn-sm" id="export-csv-btn">⬇️ Export Orders to CSV</button>
+      </div>
+      <div class="admin-table-wrap pad-20">
+        <table class="simple-table">
+          <thead><tr><th>Rank</th><th>Product</th><th>Times Ordered</th><th>Revenue</th></tr></thead>
+          <tbody id="top-products-tbody"><tr><td colspan="4" class="center muted">Loading...</td></tr></tbody>
+        </table>
+      </div>
+
+      <h3 style="margin-top:24px;">Customer Report</h3>
+      <div class="admin-table-wrap pad-20">
+        <table class="simple-table">
+          <thead><tr><th>Customer</th><th>Total Orders</th><th>Total Spent</th></tr></thead>
+          <tbody id="customer-report-tbody"><tr><td colspan="3" class="center muted">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    `;
+
+    document.getElementById("export-csv-btn").addEventListener("click", exportCsv);
+    loadReports();
+  }
+
+  async function loadReports() {
+    const snap = await getDocs(collection(db, COL.ORDERS));
+    allOrders = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+
+    const now = new Date();
+    const startOfDay = new Date(now); startOfDay.setHours(0, 0, 0, 0);
+    const startOfWeek = new Date(now); startOfWeek.setDate(now.getDate() - now.getDay()); startOfWeek.setHours(0, 0, 0, 0);
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const dateOf = (o) => o.createdAt?.toDate ? o.createdAt.toDate() : null;
+
+    document.getElementById("r-today").textContent = allOrders.filter((o) => dateOf(o) >= startOfDay).length;
+    document.getElementById("r-week").textContent = allOrders.filter((o) => dateOf(o) >= startOfWeek).length;
+    document.getElementById("r-month").textContent = allOrders.filter((o) => dateOf(o) >= startOfMonth).length;
+
+    const revenue = allOrders.filter((o) => o.status === "delivered").reduce((s, o) => s + (o.total || 0), 0);
+    document.getElementById("r-revenue").textContent = formatCurrency(revenue);
+
+    renderTopProducts();
+    renderCustomerReport();
+  }
+
+  function renderTopProducts() {
+    const productMap = {};
+    allOrders.forEach((o) => {
+      (o.items || []).forEach((item) => {
+        if (!productMap[item.name]) productMap[item.name] = { orders: 0, revenue: 0 };
+        productMap[item.name].orders += 1;
+        productMap[item.name].revenue += item.lineTotal || 0;
+      });
+    });
+    const sorted = Object.entries(productMap).sort((a, b) => b[1].revenue - a[1].revenue).slice(0, 10);
+    const tbody = document.getElementById("top-products-tbody");
+    if (!sorted.length) {
+      tbody.innerHTML = `<tr><td colspan="4" class="center muted">No sales data yet.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = sorted.map(([name, data], i) => `
+      <tr><td>#${i + 1}</td><td>${escapeHtml(name)}</td><td>${data.orders}</td><td>${formatCurrency(data.revenue)}</td></tr>`).join("");
+  }
+
+  function renderCustomerReport() {
+    const custMap = {};
+    allOrders.forEach((o) => {
+      const key = o.customerName || "Guest";
+      if (!custMap[key]) custMap[key] = { orders: 0, spent: 0 };
+      custMap[key].orders += 1;
+      custMap[key].spent += o.total || 0;
+    });
+    const sorted = Object.entries(custMap).sort((a, b) => b[1].spent - a[1].spent).slice(0, 15);
+    const tbody = document.getElementById("customer-report-tbody");
+    if (!sorted.length) {
+      tbody.innerHTML = `<tr><td colspan="3" class="center muted">No customer data yet.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = sorted.map(([name, data]) => `
+      <tr><td>${escapeHtml(name)}</td><td>${data.orders}</td><td>${formatCurrency(data.spent)}</td></tr>`).join("");
+  }
+
+  function exportCsv() {
+    if (!allOrders.length) return toast("No orders to export.", "error");
+    const headers = ["Order ID", "Customer", "Phone", "Total", "Status", "Delivery Method", "Date"];
+    const rows = allOrders.map((o) => [
+      o.orderId, o.customerName, o.customerPhone, o.total, o.status, o.deliveryMethod,
+      o.createdAt?.toDate ? o.createdAt.toDate().toLocaleString() : ""
+    ]);
+    const csv = [headers, ...rows].map((r) => r.map((c) => `"${String(c ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `orders-report-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+</script>
+</body>
+</html>

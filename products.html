@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>All Items — Ranaweera Family Super</title>
+<link rel="icon" href="assets/images/logo.jpg"/>
+<link rel="stylesheet" href="assets/css/style.css"/>
+<link rel="stylesheet" href="assets/css/themes.css"/>
+<style>
+.products-layout{display:grid;grid-template-columns:240px 1fr;gap:24px;align-items:start;}
+@media(max-width:860px){.products-layout{grid-template-columns:1fr;}}
+.filter-pill{display:flex;align-items:center;gap:8px;padding:9px 14px;border-radius:10px;cursor:pointer;font-size:13.5px;transition:all .18s ease;}
+.filter-pill:hover{background:var(--green-light);}
+.filter-pill input{accent-color:var(--green-dark);}
+.filter-pill.active-cat{background:var(--green-light);color:var(--green-dark);font-weight:700;}
+</style>
+</head>
+<body>
+<div id="rfs-loading-overlay"><div class="rfs-loader"><div class="rfs-loader-ring"></div><div class="rfs-loader-ring rfs-loader-ring2"></div><div class="rfs-loader-dot"></div></div></div>
+<header id="app-header" class="site-header"></header>
+<div class="page-hero"><h1 id="page-title">All Items</h1><p>Fresh products, quality brands — delivered to your door</p></div>
+<main class="container section">
+  <div class="products-layout">
+    <aside class="card pad-20" id="filters-panel">
+      <h4 style="margin-bottom:14px;font-size:15px;">🔍 Search</h4>
+      <input type="text" class="input" id="filter-search" placeholder="Search items..." style="margin-bottom:20px;"/>
+      <h4 style="margin-bottom:12px;font-size:15px;">📂 Categories</h4>
+      <div id="filter-categories"></div>
+      <button class="btn btn-outline btn-block" id="clear-filters-btn" style="margin-top:16px;">Clear Filters</button>
+    </aside>
+    <div>
+      <div class="flex justify-between items-center" style="margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+        <span class="muted" id="results-count" style="font-size:14px;"></span>
+        <select class="input" id="sort-select" style="max-width:200px;width:auto;">
+          <option value="">Newest First</option>
+          <option value="price_asc">Price: Low to High</option>
+          <option value="price_desc">Price: High to Low</option>
+          <option value="name_asc">Name: A-Z</option>
+        </select>
+      </div>
+      <div class="grid grid-products" id="products-mount"></div>
+    </div>
+  </div>
+</main>
+<div id="app-floats"></div>
+<nav id="app-bottomnav"></nav>
+<footer id="app-footer" class="site-footer"></footer>
+<script type="module">
+  import "./assets/js/layout.js";
+  import { subscribeProductsPage, subscribeSearchProducts, subscribeCategories } from "./assets/js/products.js";
+  import { addToCart } from "./assets/js/cart.js";
+  import { escapeHtml, formatCurrency } from "./assets/js/ui-helpers.js";
+  import { getEffectiveBasePrice, getDefaultQuantity, getUnitMeta } from "./assets/js/pricing.js";
+
+  document.getElementById("rfs-loading-overlay").classList.add("hidden");
+
+  const params = new URLSearchParams(window.location.search);
+  let state = { categoryId: params.get("category")||null, search: params.get("search")||"", sortBy: "" };
+  document.getElementById("filter-search").value = state.search;
+  if (state.search) document.getElementById("page-title").textContent = `Search: "${state.search}"`;
+
+  function productCardHtml(p) {
+    const meta = getUnitMeta(p.unitType);
+    const ep = getEffectiveBasePrice(p);
+    const stock = Number(p.stock)||0;
+    const stockTag = stock<=0
+      ? `<span class="stock-tag stock-out">Out of Stock</span>`
+      : stock<=1000 ? `<span class="stock-tag stock-low">Low Stock</span>`
+      : `<span class="stock-tag stock-in">In Stock</span>`;
+    const priceUnit = meta.family==="weight"?"1Kg":meta.family==="volume"?"1L":`1 ${meta.label}`;
+    return `
+    <div class="product-card" data-id="${p.id}">
+      ${p.hasDiscount||p.bestDeals?`<span class="badge-flag">${p.bestDeals?"DEAL":"SALE"}</span>`:""}
+      <a href="product.html?id=${p.id}" class="img-wrap">
+        <img src="${p.images?.[0]||"assets/images/logo.jpg"}" alt="${escapeHtml(p.name)}" loading="lazy"/>
+      </a>
+      <div class="body">
+        <span class="cat-label">${meta.icon} per ${priceUnit}</span>
+        <a href="product.html?id=${p.id}"><div class="name">${escapeHtml(p.name)}</div></a>
+        <div class="price-row">
+          <span class="price">${formatCurrency(ep)}</span>
+          ${p.hasDiscount?`<span class="price-strike">${formatCurrency(p.basePrice)}</span>`:""}
+        </div>
+        ${stockTag}
+        <button class="add-cart-btn" data-id="${p.id}" ${stock<=0?"disabled":""}>
+          ${stock<=0?"Out of Stock":"Add to Cart"}
+        </button>
+      </div>
+    </div>`;
+  }
+
+  function bindButtons(container, products) {
+    container.querySelectorAll(".add-cart-btn:not([disabled])").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const p = products.find((x) => x.id === btn.dataset.id);
+        if (!p) return;
+        const ok = addToCart(p, getDefaultQuantity(p.unitType));
+        if (ok) {
+          const card = container.querySelector(`.product-card[data-id="${p.id}"]`);
+          if (card) {
+            card.classList.add("just-added");
+            const check = document.createElement("div");
+            check.className = "added-check"; check.textContent = "✓";
+            card.querySelector(".img-wrap")?.appendChild(check);
+            setTimeout(() => { card.classList.remove("just-added"); check.remove(); }, 1100);
+          }
+        }
+      });
+    });
+  }
+
+  function renderItems(items) {
+    const mount = document.getElementById("products-mount");
+    if (!items.length) {
+      mount.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><div class="icon">🛒</div><p>No items found. Try a different category or search.</p></div>`;
+    } else {
+      mount.innerHTML = items.map(productCardHtml).join("");
+      bindButtons(mount, items);
+    }
+    document.getElementById("results-count").textContent = `${items.length} item(s) — live updates`;
+  }
+
+  subscribeCategories((cats) => {
+    const mount = document.getElementById("filter-categories");
+    const colorMap = { "Vegetables":"#e8f5ee","Fruits":"#fff3e8","Rice":"#fff9e6","Dairy":"#e0f2fe","Meat":"#fce7f3","Fish":"#e0f2fe","Bakery":"#fff9e6","Beverages":"#e0f2fe","Snacks":"#fff3e8","Personal":"#f3e8ff","Household":"#e8f5ee" };
+    function getBg(name) { for (const k of Object.keys(colorMap)) if (name.includes(k)) return colorMap[k]; return "#f9fafb"; }
+    mount.innerHTML = `
+      <label class="filter-pill ${!state.categoryId?"active-cat":""}">
+        <input type="radio" name="cat" value="" ${!state.categoryId?"checked":""}/> All Categories
+      </label>` + cats.map((c) => `
+      <label class="filter-pill ${state.categoryId===c.id?"active-cat":""}" style="${state.categoryId===c.id?"background:"+getBg(c.name)+";":""}">
+        <input type="radio" name="cat" value="${c.id}" ${state.categoryId===c.id?"checked":""}/>
+        ${c.imageUrl?`<img src="${c.imageUrl}" style="width:20px;height:20px;border-radius:4px;object-fit:cover;"/>`:`<span>${c.icon||"🛒"}</span>`}
+        ${escapeHtml(c.name)}
+      </label>`).join("");
+
+    mount.querySelectorAll("input[name=cat]").forEach((el) => {
+      el.addEventListener("change", () => {
+        state.categoryId = el.value || null;
+        state.search = "";
+        document.getElementById("filter-search").value = "";
+        const cat = cats.find((c) => c.id === state.categoryId);
+        document.getElementById("page-title").textContent = cat ? cat.name : "All Items";
+        mount.querySelectorAll(".filter-pill").forEach((l) => l.classList.remove("active-cat"));
+        el.closest(".filter-pill").classList.add("active-cat");
+        runQuery();
+      });
+    });
+    if (state.categoryId) {
+      const cat = cats.find((c) => c.id === state.categoryId);
+      if (cat) document.getElementById("page-title").textContent = cat.name;
+    }
+  });
+
+  let unsub = null;
+  function stop() { if (unsub) { unsub(); unsub = null; } }
+
+  function runQuery() {
+    const mount = document.getElementById("products-mount");
+    mount.innerHTML = Array(8).fill('<div class="product-card"><div class="img-wrap skeleton" style="aspect-ratio:1/1;"></div><div style="padding:14px;"><div class="skeleton" style="height:12px;width:60%;margin-bottom:8px;"></div><div class="skeleton" style="height:16px;width:80%;"></div></div></div>').join("");
+    stop();
+    if (state.search) {
+      unsub = subscribeSearchProducts(state.search, ({ items }) => renderItems(items || []));
+    } else {
+      unsub = subscribeProductsPage({ categoryId: state.categoryId, sortBy: state.sortBy, pageSize: 120 }, ({ items }) => renderItems(items || []));
+    }
+  }
+
+  document.getElementById("filter-search").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { state.search = e.target.value.trim(); runQuery(); }
+  });
+  document.getElementById("clear-filters-btn").addEventListener("click", () => {
+    state = { categoryId: null, search: "", sortBy: "" };
+    document.getElementById("filter-search").value = "";
+    document.getElementById("sort-select").value = "";
+    document.getElementById("page-title").textContent = "All Items";
+    document.querySelectorAll("input[name=cat]").forEach((el) => el.checked = el.value === "");
+    document.querySelectorAll(".filter-pill").forEach((l) => l.classList.remove("active-cat"));
+    document.querySelector(".filter-pill")?.classList.add("active-cat");
+    runQuery();
+  });
+  document.getElementById("sort-select").addEventListener("change", (e) => { state.sortBy = e.target.value; runQuery(); });
+  window.addEventListener("beforeunload", stop);
+  runQuery();
+</script>
+</body>
+</html>

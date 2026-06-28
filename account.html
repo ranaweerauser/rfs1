@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>My Account — Ranaweera Family Super</title>
+<link rel="icon" href="assets/images/logo.jpg"/>
+<link rel="stylesheet" href="assets/css/style.css"/>
+<link rel="stylesheet" href="assets/css/themes.css"/>
+<style>
+.acc-layout{display:grid;grid-template-columns:220px 1fr;gap:24px;}
+@media(max-width:760px){.acc-layout{grid-template-columns:1fr;}}
+.acc-nav a{display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:10px;font-size:14px;margin-bottom:4px;color:var(--text-main);transition:all .18s ease;}
+.acc-nav a:hover{background:var(--green-light);color:var(--green-dark);}
+.acc-nav a.active{background:var(--green-light);color:var(--green-dark);font-weight:700;}
+</style>
+</head>
+<body>
+<header id="app-header" class="site-header"></header>
+<div class="page-hero"><h1>My Account</h1></div>
+<main class="container section" id="acc-main">
+  <div class="empty-state"><div class="spinner" style="margin:0 auto;"></div></div>
+</main>
+<div id="app-floats"></div><nav id="app-bottomnav"></nav>
+<footer id="app-footer" class="site-footer"></footer>
+<script type="module">
+  import "./assets/js/layout.js";
+  import { onAuthChange, loginWithGoogle, logout } from "./assets/js/auth.js";
+  import { db, doc, updateDoc, COL } from "./assets/js/firebase-config.js";
+  import { escapeHtml, toast } from "./assets/js/ui-helpers.js";
+
+  const main = document.getElementById("acc-main");
+
+  onAuthChange((user, profile) => {
+    if (!user) {
+      main.innerHTML = `
+        <div class="card pad-32 text-center" style="max-width:420px;margin:0 auto;">
+          <div style="font-size:48px;margin-bottom:16px;">👤</div>
+          <h3>Sign in to manage your account</h3>
+          <button class="btn btn-primary btn-block" id="acc-login" style="margin-top:14px;">Login with Google</button>
+        </div>`;
+      document.getElementById("acc-login").onclick = async () => { try { await loginWithGoogle(); } catch { toast("Login failed.","error"); } };
+      return;
+    }
+    main.innerHTML = `
+      <div class="acc-layout">
+        <nav class="card pad-16 acc-nav">
+          <a href="account.html" class="active">👤 Profile</a>
+          <a href="orders.html">📦 Order History</a>
+          <a href="#" id="logout-link">🚪 Logout</a>
+        </nav>
+        <div class="card pad-24">
+          <div class="flex items-center gap-16" style="margin-bottom:24px;">
+            <img src="${profile?.photoURL||"assets/images/logo.jpg"}" style="width:70px;height:70px;border-radius:50%;object-fit:cover;border:3px solid var(--green-light);"/>
+            <div>
+              <div style="font-weight:700;font-size:17px;">${escapeHtml(profile?.name||user.displayName||"")}</div>
+              <div class="muted" style="font-size:13.5px;">${escapeHtml(profile?.email||user.email||"")}</div>
+            </div>
+          </div>
+          <h3 style="margin-bottom:14px;">Profile Details</h3>
+          <div class="field"><label>Phone Number</label><input type="tel" class="input" id="p-phone" value="${escapeHtml(profile?.phone||"")}" placeholder="07XXXXXXXX"/></div>
+          <button class="btn btn-primary" id="save-profile">Save Changes</button>
+        </div>
+      </div>`;
+
+    document.getElementById("logout-link").onclick = async (e) => {
+      e.preventDefault();
+      await logout();
+      window.location.href = "index.html";
+    };
+    document.getElementById("save-profile").onclick = async () => {
+      const phone = document.getElementById("p-phone").value.trim();
+      await updateDoc(doc(db, COL.CUSTOMERS, user.uid), { phone });
+      toast("Profile updated!","success");
+    };
+  });
+</script>
+</body>
+</html>

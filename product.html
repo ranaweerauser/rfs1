@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Item — Ranaweera Family Super</title>
+<link rel="icon" href="assets/images/logo.jpg"/>
+<link rel="stylesheet" href="assets/css/style.css"/>
+<link rel="stylesheet" href="assets/css/themes.css"/>
+<style>
+.pd-grid{display:grid;grid-template-columns:1fr 1fr;gap:36px;}
+@media(max-width:760px){.pd-grid{grid-template-columns:1fr;}}
+.gallery-main{aspect-ratio:1;background:var(--gray-100);border-radius:var(--radius-xl);overflow:hidden;}
+.gallery-main img{width:100%;height:100%;object-fit:cover;}
+.gallery-thumbs{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;}
+.gallery-thumbs img{width:60px;height:60px;border-radius:10px;object-fit:cover;cursor:pointer;border:2.5px solid transparent;transition:border-color .18s;}
+.gallery-thumbs img.active{border-color:var(--green-dark);}
+.stars{color:#f4a708;letter-spacing:2px;}
+.review-item{padding:14px 0;border-bottom:1px solid var(--border-soft);}
+.review-item:last-child{border-bottom:none;}
+</style>
+</head>
+<body>
+<div id="rfs-loading-overlay"><div class="rfs-loader"><div class="rfs-loader-ring"></div><div class="rfs-loader-ring rfs-loader-ring2"></div><div class="rfs-loader-dot"></div></div></div>
+<header id="app-header" class="site-header"></header>
+<main class="container section" id="pd-main">
+  <div class="empty-state"><div class="spinner" style="margin:0 auto;"></div></div>
+</main>
+<div id="app-floats"></div><nav id="app-bottomnav"></nav>
+<footer id="app-footer" class="site-footer"></footer>
+<script type="module">
+  import "./assets/js/layout.js";
+  import { subscribeProduct, subscribeApprovedReviews, addReview, subscribeProductsPage } from "./assets/js/products.js";
+  import { addToCart } from "./assets/js/cart.js";
+  import { getCurrentUser, getCurrentCustomerProfile, loginWithGoogle, onAuthChange } from "./assets/js/auth.js";
+  import { escapeHtml, formatCurrency, toast } from "./assets/js/ui-helpers.js";
+  import { getUnitMeta, getStepperConfig, getEffectiveBasePrice, getDefaultQuantity, formatQuantity, calculatePrice, clampQuantity } from "./assets/js/pricing.js";
+
+  const params = new URLSearchParams(window.location.search);
+  const pid = params.get("id");
+  const main = document.getElementById("pd-main");
+
+  setTimeout(() => document.getElementById("rfs-loading-overlay")?.classList.add("hidden"), 3000);
+
+  let product = null, qty = 0, firstRender = true;
+
+  if (!pid) { main.innerHTML = `<div class="empty-state"><div class="icon">❓</div><p>No item specified.</p><a href="products.html" class="btn btn-primary" style="margin-top:14px;">Browse Items</a></div>`; }
+  else { subscribeProduct(pid, handleUpdate); }
+
+  function handleUpdate(p) {
+    document.getElementById("rfs-loading-overlay")?.classList.add("hidden");
+    if (!p) { main.innerHTML = `<div class="empty-state"><div class="icon">❌</div><p>Item no longer available.</p></div>`; return; }
+    product = p;
+    if (firstRender) {
+      firstRender = false;
+      qty = getDefaultQuantity(p.unitType);
+      renderFull(p);
+    } else {
+      updatePriceStock();
+    }
+  }
+
+  function renderFull(p) {
+    document.title = `${p.name} — Ranaweera Family Super`;
+    const images = p.images?.length ? p.images : ["assets/images/logo.jpg"];
+    const meta = getUnitMeta(p.unitType);
+    const cfg = getStepperConfig(p.unitType);
+    const priceUnit = meta.family==="weight"?"1Kg":meta.family==="volume"?"1L":`1 ${meta.label}`;
+    main.innerHTML = `
+      <div class="breadcrumbs"><a href="index.html">Home</a> / <a href="products.html">Items</a> / ${escapeHtml(p.name)}</div>
+      <div class="pd-grid" style="margin-top:20px;">
+        <div>
+          <div class="gallery-main"><img id="main-img" src="${images[0]}" alt="${escapeHtml(p.name)}"/></div>
+          <div class="gallery-thumbs" id="thumbs">${images.map((u,i)=>`<img src="${u}" class="${i===0?"active":""}" data-src="${u}"/>`).join("")}</div>
+        </div>
+        <div>
+          <span class="label-tag">${meta.icon} Price per ${priceUnit}</span>
+          <h1 style="font-size:clamp(20px,3vw,32px);margin-bottom:10px;">${escapeHtml(p.name)}</h1>
+          <div id="rating-row" style="margin-bottom:14px;"></div>
+          <div class="price-row" style="font-size:28px;margin:16px 0;" id="price-display"></div>
+          <div id="stock-display" style="margin:10px 0;"></div>
+          <div style="margin:20px 0;">
+            <h4 style="font-size:13.5px;margin-bottom:10px;">Select Quantity</h4>
+            <div class="qty-stepper">
+              <button id="qty-minus" type="button">−</button>
+              <span class="qty-stepper-label" id="qty-label"></span>
+              <button id="qty-plus" type="button">+</button>
+            </div>
+            <p class="muted" style="font-size:12px;margin-top:8px;">
+              ${cfg.kind.includes("weight")?"Steps of 250g (up to 100Kg)":cfg.kind.includes("volume")?"Steps of 250ml (up to 100L)":"Choose 1 to 100"}
+            </p>
+          </div>
+          <button class="btn btn-primary btn-lg btn-block" id="add-btn">Add to Cart</button>
+          <div class="card pad-16" style="margin-top:18px;background:var(--green-light);">
+            <div style="display:flex;gap:10px;margin-bottom:8px;font-size:13.5px;font-weight:600;color:var(--green-dark);">🚚 Cash on Delivery available</div>
+            <div style="display:flex;gap:10px;font-size:13.5px;font-weight:600;color:var(--green-dark);">🏬 Self Pickup available at our store</div>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:48px;">
+        <h2 class="section-title" style="margin-bottom:20px;">Customer Reviews</h2>
+        <div id="reviews-mount"></div>
+        <div id="review-form"></div>
+      </div>
+      <div style="margin-top:48px;">
+        <h2 class="section-title" style="margin-bottom:20px;">You May Also Like</h2>
+        <div class="grid grid-products" id="related-mount"></div>
+      </div>`;
+
+    updatePriceStock();
+    document.querySelectorAll("#thumbs img").forEach((th) => {
+      th.onclick = () => {
+        document.getElementById("main-img").src = th.dataset.src;
+        document.querySelectorAll("#thumbs img").forEach((t) => t.classList.remove("active"));
+        th.classList.add("active");
+      };
+    });
+    document.getElementById("qty-minus").onclick = () => {
+      const { step, min } = getStepperConfig(product.unitType);
+      qty = Math.max(min, qty - step); updatePriceStock();
+    };
+    document.getElementById("qty-plus").onclick = () => {
+      const { step, max } = getStepperConfig(product.unitType);
+      qty = Math.min(max, qty + step); updatePriceStock();
+    };
+    document.getElementById("add-btn").onclick = () => {
+      const ok = addToCart(product, qty);
+      if (ok) {
+        const btn = document.getElementById("add-btn");
+        const orig = btn.textContent;
+        btn.textContent = "✓ Added!"; btn.style.background = "#2d7a52";
+        setTimeout(() => { btn.textContent = orig; btn.style.background = ""; }, 1200);
+      }
+    };
+    loadReviews(p.categoryId);
+  }
+
+  function updatePriceStock() {
+    if (!product) return;
+    qty = clampQuantity(product.unitType, qty);
+    const ep = getEffectiveBasePrice(product);
+    const lineTotal = calculatePrice(product.unitType, ep, qty);
+    const priceEl = document.getElementById("price-display");
+    if (priceEl) priceEl.innerHTML = `<span class="price">${formatCurrency(lineTotal)}</span>${product.hasDiscount?`<span class="price-strike" style="font-size:18px;">${formatCurrency(calculatePrice(product.unitType,product.basePrice,qty))}</span>`:""}`;
+    const qtyEl = document.getElementById("qty-label");
+    if (qtyEl) qtyEl.textContent = formatQuantity(product.unitType, qty);
+    const stockEl = document.getElementById("stock-display");
+    const addBtn = document.getElementById("add-btn");
+    if (stockEl && addBtn) {
+      if (product.stock <= 0) {
+        stockEl.innerHTML = `<span class="stock-tag stock-out">Out of Stock</span>`;
+        addBtn.disabled = true; addBtn.textContent = "Out of Stock";
+      } else if (qty > product.stock) {
+        stockEl.innerHTML = `<span class="stock-tag stock-low">Only ${formatQuantity(product.unitType,product.stock)} left</span>`;
+        addBtn.disabled = true; addBtn.textContent = "Reduce Quantity";
+      } else {
+        stockEl.innerHTML = product.stock <= 1000 ? `<span class="stock-tag stock-low">Only ${formatQuantity(product.unitType,product.stock)} left</span>` : `<span class="stock-tag stock-in">In Stock</span>`;
+        addBtn.disabled = false; addBtn.textContent = "Add to Cart";
+      }
+    }
+  }
+
+  function loadReviews(categoryId) {
+    subscribeApprovedReviews(pid, (reviews) => {
+      const rm = document.getElementById("reviews-mount");
+      if (!rm) return;
+      const ratingRow = document.getElementById("rating-row");
+      if (reviews.length && ratingRow) {
+        const avg = (reviews.reduce((s,r)=>s+r.rating,0)/reviews.length).toFixed(1);
+        ratingRow.innerHTML = `<span class="stars">${"★".repeat(Math.round(avg))}${"☆".repeat(5-Math.round(avg))}</span> <span class="muted">${avg} (${reviews.length} review${reviews.length>1?"s":""})</span>`;
+        rm.innerHTML = reviews.map((r)=>`<div class="review-item"><div class="flex justify-between"><strong>${escapeHtml(r.customerName)}</strong><span class="stars">${"★".repeat(r.rating)}${"☆".repeat(5-r.rating)}</span></div><p class="muted" style="margin:4px 0 0;">${escapeHtml(r.comment)}</p></div>`).join("");
+      } else {
+        if (ratingRow) ratingRow.innerHTML = `<span class="muted">No reviews yet</span>`;
+        rm.innerHTML = `<p class="muted">Be the first to review this item!</p>`;
+      }
+    });
+    renderReviewForm();
+    if (categoryId) {
+      subscribeProductsPage({categoryId, pageSize:8}, ({items}) => {
+        const rel = document.getElementById("related-mount");
+        if (!rel) return;
+        const filtered = (items||[]).filter((p)=>p.id!==pid).slice(0,4);
+        rel.innerHTML = filtered.map((p)=>`<div class="product-card"><a href="product.html?id=${p.id}" class="img-wrap"><img src="${p.images?.[0]||"assets/images/logo.jpg"}" alt="${escapeHtml(p.name)}" style="width:100%;aspect-ratio:1;object-fit:cover;"/></a><div class="body"><a href="product.html?id=${p.id}"><div class="name">${escapeHtml(p.name)}</div></a><span class="price">${formatCurrency(getEffectiveBasePrice(p))}</span></div></div>`).join("")||`<p class="muted">No related items.</p>`;
+      });
+    }
+  }
+
+  function renderReviewForm() {
+    const rf = document.getElementById("review-form");
+    if (!rf) return;
+    onAuthChange((user, profile) => {
+      if (user) {
+        rf.innerHTML = `<div class="card pad-20" style="margin-top:20px;"><h4>Write a Review</h4><select class="input" id="rv-rating" style="max-width:160px;margin:10px 0;"><option value="5">★★★★★ Excellent</option><option value="4">★★★★☆ Good</option><option value="3">★★★☆☆ Average</option><option value="2">★★☆☆☆ Poor</option><option value="1">★☆☆☆☆ Bad</option></select><textarea class="input" id="rv-comment" placeholder="Share your experience…"></textarea><button class="btn btn-primary" id="submit-rv" style="margin-top:10px;">Submit Review</button></div>`;
+        document.getElementById("submit-rv").onclick = async () => {
+          const c = document.getElementById("rv-comment").value.trim();
+          if (!c) return toast("Please write a comment.","error");
+          await addReview(pid,{customerName:profile?.name||user.displayName||"Customer",customerUid:user.uid,rating:Number(document.getElementById("rv-rating").value),comment:c});
+          toast("Thank you! Your review will appear after approval.","success");
+          document.getElementById("rv-comment").value = "";
+        };
+      } else {
+        rf.innerHTML = `<div class="card pad-20 text-center" style="margin-top:20px;"><p class="muted">Login to write a review.</p><button class="btn btn-outline" id="rv-login" style="margin-top:10px;">Login with Google</button></div>`;
+        document.getElementById("rv-login").onclick = () => loginWithGoogle();
+      }
+    });
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Terms & Conditions — Ranaweera Family Super</title>
+<link rel="icon" href="assets/images/logo.jpg" />
+<link rel="stylesheet" href="assets/css/style.css" />
+<link rel="stylesheet" href="assets/css/themes.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&family=Nunito:wght@300;400;500;600;700&family=Playfair+Display:wght@600;700;800&family=Roboto:wght@300;400;500;700&family=Montserrat:wght@400;600;700;800&display=swap" />
+</head>
+<body>
+<header id="app-header" class="site-header"></header>
+<div class="page-hero"><h1>Terms &amp; Conditions</h1></div>
+<main class="container section">
+  <div class="card pad-24" style="max-width:760px;margin:0 auto;">
+    <div id="policy-content" class="muted" style="white-space:pre-wrap;line-height:1.9;"></div>
+  </div>
+</main>
+<div id="app-floats"></div>
+<nav id="app-bottomnav"></nav>
+<footer id="app-footer" class="site-footer"></footer>
+<script type="module">
+  import "./assets/js/layout.js";
+  import { subscribeSettings } from "./assets/js/settings.js";
+  const DEFAULT = "By using this website, you agree to the following terms:\n1. All product prices are listed in Sri Lankan Rupees.\n2. Orders are subject to product availability.\n3. Payment is accepted via Cash on Delivery or Self Pickup only.\n4. We reserve the right to cancel any order if needed.";
+  subscribeSettings((s) => {
+    document.getElementById("policy-content").textContent = s.policies?.terms || DEFAULT;
+  });
+</script>
+</body>
+</html>

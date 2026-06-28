@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>WhatsApp Settings — Admin Panel</title>
+<link rel="icon" href="../assets/images/logo.jpg" />
+<link rel="stylesheet" href="../assets/css/style.css" />
+<link rel="stylesheet" href="../assets/css/themes.css" />
+<link rel="stylesheet" href="../assets/css/admin.css" />
+</head>
+<body>
+<div id="admin-root"></div>
+
+<script type="module">
+  import { initAdminLayout, setPageTitle } from "../assets/js/admin/admin-layout.js";
+  import { subscribeSettings } from "../assets/js/settings.js";
+  import { db, doc, setDoc, COL, SETTINGS_DOC_ID } from "../assets/js/firebase-config.js";
+  import { escapeHtml, toast } from "../assets/js/ui-helpers.js";
+
+  const session = initAdminLayout("settings-whatsapp.html");
+
+  if (session) {
+    setPageTitle("WhatsApp Settings");
+
+    subscribeSettings((settings) => {
+      document.getElementById("admin-page-content").innerHTML = `
+        <div class="card pad-24" style="max-width:680px;">
+          <h3>WhatsApp Order Notifications</h3>
+          <p class="muted" style="font-size:13px;">
+            When a new order is placed, your admin dashboard alerts in real-time automatically.
+            For WhatsApp, click "Send WhatsApp" on any order to open a pre-filled message to this number with one click.
+          </p>
+
+          <label class="flex items-center gap-8" style="margin:18px 0 10px;">
+            <input type="checkbox" id="wa-enabled" ${settings.whatsappEnabled !== false ? "checked" : ""} /> Enable WhatsApp Button on Website
+          </label>
+
+          <div class="field"><label>WhatsApp Number (with country code, e.g. +94771234567)</label>
+            <input type="text" class="input" id="wa-number" value="${escapeHtml(settings.whatsappNumber)}" />
+          </div>
+
+          <div class="field">
+            <label>Order Notification Message Template</label>
+            <textarea class="input" id="wa-template" style="min-height:160px;">${escapeHtml(settings.whatsappMessageTemplate)}</textarea>
+            <p class="muted" style="font-size:12px; margin-top:6px;">
+              Available placeholders: <code>{name}</code> <code>{phone}</code> <code>{currency}</code> <code>{total}</code> <code>{deliveryMethod}</code> <code>{orderId}</code>
+            </p>
+          </div>
+
+          <div class="flex gap-12" style="margin-top:18px;">
+            <button class="btn btn-primary" id="save-wa-btn" style="flex:1;">Save Changes</button>
+            <button class="btn btn-outline" id="test-wa-btn">Send Test Message</button>
+          </div>
+
+          <div class="card pad-16" style="background:var(--bg-surface-2); margin-top:24px;">
+            <strong>💡 Want fully automatic WhatsApp messages (no click needed)?</strong>
+            <p class="muted" style="font-size:13px; margin-top:6px;">
+              That requires connecting the official WhatsApp Business Cloud API from Meta (free tier available).
+              Once you create a Meta Business app and get your API credentials, share them and this can be upgraded
+              to send messages automatically without any manual click.
+            </p>
+          </div>
+        </div>
+      `;
+
+      document.getElementById("save-wa-btn").addEventListener("click", async () => {
+        const btn = document.getElementById("save-wa-btn");
+        btn.disabled = true;
+        btn.textContent = "Saving...";
+        try {
+          await setDoc(doc(db, COL.SETTINGS, SETTINGS_DOC_ID), {
+            whatsappEnabled: document.getElementById("wa-enabled").checked,
+            whatsappNumber: document.getElementById("wa-number").value.trim(),
+            whatsappMessageTemplate: document.getElementById("wa-template").value
+          }, { merge: true });
+          toast("✅ WhatsApp settings saved!", "success");
+        } catch (e) {
+          toast("Failed to save.", "error");
+        }
+        btn.disabled = false;
+        btn.textContent = "Save Changes";
+      });
+
+      document.getElementById("test-wa-btn").addEventListener("click", () => {
+        const number = document.getElementById("wa-number").value.trim().replace(/[^0-9]/g, "");
+        if (!number) return toast("Please enter a WhatsApp number first.", "error");
+        const message = encodeURIComponent("✅ Test message from Ranaweera Family Super Admin Panel. WhatsApp integration is working!");
+        window.open(`https://wa.me/${number}?text=${message}`, "_blank");
+      });
+    });
+  }
+</script>
+</body>
+</html>

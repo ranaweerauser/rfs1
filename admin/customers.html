@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Customers — Admin Panel</title>
+<link rel="icon" href="../assets/images/logo.jpg" />
+<link rel="stylesheet" href="../assets/css/style.css" />
+<link rel="stylesheet" href="../assets/css/themes.css" />
+<link rel="stylesheet" href="../assets/css/admin.css" />
+</head>
+<body>
+<div id="admin-root"></div>
+
+<script type="module">
+  import { initAdminLayout, setPageTitle } from "../assets/js/admin/admin-layout.js";
+  import { db, collection, getDocs, doc, updateDoc, query, where, orderBy, COL } from "../assets/js/firebase-config.js";
+  import { escapeHtml, formatCurrency, formatDate, toast, openModal, closeModal } from "../assets/js/ui-helpers.js";
+
+  const session = initAdminLayout("customers.html");
+  let allCustomers = [];
+
+  if (session) {
+    setPageTitle("Customer Management");
+    document.getElementById("admin-page-content").innerHTML = `
+      <div class="admin-toolbar">
+        <input type="text" class="input" id="cust-search" placeholder="Search by name, email or phone..." style="max-width:320px;" />
+      </div>
+      <div class="admin-table-wrap pad-20">
+        <table class="simple-table">
+          <thead><tr><th>Customer</th><th>Email</th><th>Phone</th><th>Joined</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="cust-tbody"><tr><td colspan="6" class="center muted">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    `;
+    document.getElementById("cust-search").addEventListener("input", (e) => render(e.target.value.trim().toLowerCase()));
+    await loadCustomers();
+  }
+
+  async function loadCustomers() {
+    const snap = await getDocs(collection(db, COL.CUSTOMERS));
+    allCustomers = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    render("");
+  }
+
+  function render(term) {
+    let list = allCustomers;
+    if (term) {
+      list = list.filter((c) =>
+        (c.name || "").toLowerCase().includes(term) ||
+        (c.email || "").toLowerCase().includes(term) ||
+        (c.phone || "").toLowerCase().includes(term)
+      );
+    }
+    const tbody = document.getElementById("cust-tbody");
+    if (!list.length) {
+      tbody.innerHTML = `<tr><td colspan="6" class="center muted">No customers found.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = list.map((c) => `
+      <tr data-id="${c.id}">
+        <td>${escapeHtml(c.name || "—")}</td>
+        <td>${escapeHtml(c.email || "—")}</td>
+        <td>${escapeHtml(c.phone || "—")}</td>
+        <td style="font-size:12.5px;">${formatDate(c.createdAt)}</td>
+        <td><span class="tag ${c.blocked ? "tag-cancelled" : "tag-delivered"}">${c.blocked ? "Blocked" : "Active"}</span></td>
+        <td>
+          <button class="btn btn-sm btn-outline view-cust-btn">View Orders</button>
+          <button class="btn btn-sm ${c.blocked ? "btn-primary" : "btn-danger"} toggle-block-btn">${c.blocked ? "Unblock" : "Block"}</button>
+        </td>
+      </tr>`).join("");
+
+    tbody.querySelectorAll(".toggle-block-btn").forEach((btn) => {
+      btn.onclick = async () => {
+        const id = btn.closest("tr").dataset.id;
+        const cust = allCustomers.find((c) => c.id === id);
+        await updateDoc(doc(db, COL.CUSTOMERS, id), { blocked: !cust.blocked });
+        cust.blocked = !cust.blocked;
+        toast(`Customer ${cust.blocked ? "blocked" : "unblocked"}.`, "success");
+        render(term);
+      };
+    });
+    tbody.querySelectorAll(".view-cust-btn").forEach((btn) => {
+      btn.onclick = async () => {
+        const id = btn.closest("tr").dataset.id;
+        const cust = allCustomers.find((c) => c.id === id);
+        await openCustomerOrders(cust);
+      };
+    });
+  }
+
+  async function openCustomerOrders(customer) {
+    const modal = openModal(`<h3>${escapeHtml(customer.name)}'s Orders</h3><div id="cust-orders-mount" class="center muted" style="padding:20px;">Loading...</div>`, { wide: true });
+    const q = query(collection(db, COL.ORDERS), where("customerUid", "==", customer.id), orderBy("createdAt", "desc"));
+    const snap = await getDocs(q);
+    const orders = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    const mount = document.getElementById("cust-orders-mount");
+    if (!orders.length) {
+      mount.innerHTML = `<p class="muted">No orders from this customer yet.</p>`;
+      return;
+    }
+    mount.innerHTML = `
+      <table class="simple-table">
+        <thead><tr><th>Order ID</th><th>Total</th><th>Status</th><th>Date</th></tr></thead>
+        <tbody>
+          ${orders.map((o) => `<tr><td>${escapeHtml(o.orderId)}</td><td>${formatCurrency(o.total)}</td><td><span class="tag tag-${o.status}">${o.status}</span></td><td style="font-size:12.5px;">${formatDate(o.createdAt)}</td></tr>`).join("")}
+        </tbody>
+      </table>`;
+  }
+</script>
+</body>
+</html>

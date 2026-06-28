@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Orders — Admin Panel</title>
+<link rel="icon" href="../assets/images/logo.jpg" />
+<link rel="stylesheet" href="../assets/css/style.css" />
+<link rel="stylesheet" href="../assets/css/themes.css" />
+<link rel="stylesheet" href="../assets/css/admin.css" />
+<style>
+@media print {
+  .admin-sidebar, .admin-topbar, .admin-toolbar, .tab-row, .no-print { display:none !important; }
+  .admin-content { padding:0 !important; }
+}
+</style>
+</head>
+<body>
+<div id="admin-root"></div>
+
+<script type="module">
+  import { initAdminLayout, setPageTitle } from "../assets/js/admin/admin-layout.js";
+  import { subscribeAllOrders, updateOrderStatus, buildWhatsAppOrderLink, markOrderSeen, ORDER_STATUS } from "../assets/js/orders.js";
+  import { escapeHtml, formatCurrency, formatDate, toast, openModal, closeModal } from "../assets/js/ui-helpers.js";
+
+  const session = initAdminLayout("orders.html");
+  let allOrders = [];
+  let activeStatus = "";
+  let searchTerm = "";
+
+  if (session) {
+    setPageTitle("Order Management");
+    document.getElementById("admin-page-content").innerHTML = `
+      <div class="tab-row">
+        <button class="tab-btn active" data-status="">All Orders</button>
+        <button class="tab-btn" data-status="unseen">🔔 Unreviewed</button>
+        <button class="tab-btn" data-status="pending">Pending</button>
+        <button class="tab-btn" data-status="processing">Processing</button>
+        <button class="tab-btn" data-status="ready">Ready</button>
+        <button class="tab-btn" data-status="delivered">Delivered</button>
+        <button class="tab-btn" data-status="cancelled">Cancelled</button>
+      </div>
+      <div class="admin-toolbar">
+        <input type="text" class="input" id="order-search" placeholder="Search by Order ID, customer name or phone..." style="max-width:340px;" />
+      </div>
+      <div class="admin-table-wrap pad-20">
+        <table class="simple-table">
+          <thead><tr><th></th><th>Order ID</th><th>Customer</th><th>Items</th><th>Total</th><th>Method</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead>
+          <tbody id="orders-tbody"><tr><td colspan="9" class="center muted">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    `;
+
+    document.querySelectorAll(".tab-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        activeStatus = btn.dataset.status;
+        renderTable();
+      });
+    });
+
+    document.getElementById("order-search").addEventListener("input", (e) => {
+      searchTerm = e.target.value.trim().toLowerCase();
+      renderTable();
+    });
+
+    subscribeAllOrders((orders) => { allOrders = orders; renderTable(); });
+  }
+
+  function renderTable() {
+    let filtered = allOrders;
+    if (activeStatus === "unseen") filtered = filtered.filter((o) => !o.seenByAdmin);
+    else if (activeStatus) filtered = filtered.filter((o) => o.status === activeStatus);
+    if (searchTerm) {
+      filtered = filtered.filter((o) =>
+        o.orderId?.toLowerCase().includes(searchTerm) ||
+        o.customerName?.toLowerCase().includes(searchTerm) ||
+        o.customerPhone?.toLowerCase().includes(searchTerm)
+      );
+    }
+    const tbody = document.getElementById("orders-tbody");
+    if (!filtered.length) {
+      tbody.innerHTML = `<tr><td colspan="9" class="center muted">No orders found.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = filtered.map((o) => `
+      <tr data-id="${o.id}" style="${!o.seenByAdmin ? "font-weight:600;" : ""}">
+        <td>${!o.seenByAdmin ? `<span title="Not yet reviewed" style="color:#c0392b;">●</span>` : ""}</td>
+        <td><strong>${escapeHtml(o.orderId)}</strong></td>
+        <td>${escapeHtml(o.customerName)}<br/><span class="muted" style="font-size:12px;">${escapeHtml(o.customerPhone)}</span></td>
+        <td>${o.items.length} item(s)</td>
+        <td>${formatCurrency(o.total)}</td>
+        <td>${o.deliveryMethod === "pickup" ? "🏬 Pickup" : "🚚 Delivery"}</td>
+        <td><span class="tag tag-${o.status}">${o.status}</span></td>
+        <td style="font-size:12.5px;">${formatDate(o.createdAt)}</td>
+        <td><button class="btn btn-sm btn-outline view-order-btn">View</button></td>
+      </tr>`).join("");
+
+    tbody.querySelectorAll(".view-order-btn").forEach((btn) => {
+      btn.onclick = () => {
+        const order = filtered.find((o) => o.id === btn.closest("tr").dataset.id);
+        openOrderModal(order);
+      };
+    });
+  }
+
+  function statusActions(order) {
+    const buttons = [];
+    if (order.status === "pending") {
+      buttons.push(`<button class="btn btn-sm btn-primary status-btn" data-status="processing">✅ Accept & Process</button>`);
+      buttons.push(`<button class="btn btn-sm btn-danger status-btn" data-status="cancelled">❌ Reject Order</button>`);
+    } else if (order.status === "processing") {
+      buttons.push(`<button class="btn btn-sm btn-primary status-btn" data-status="ready">📦 Mark Ready</button>`);
+      buttons.push(`<button class="btn btn-sm btn-danger status-btn" data-status="cancelled">❌ Cancel</button>`);
+    } else if (order.status === "ready") {
+      buttons.push(`<button class="btn btn-sm btn-primary status-btn" data-status="delivered">✅ Mark Delivered</button>`);
+    }
+    return buttons.join(" ");
+  }
+
+  function openOrderModal(order) {
+    const waLink = buildWhatsAppOrderLink(order);
+
+    // Mark as reviewed the moment admin opens it
+    if (!order.seenByAdmin) markOrderSeen(order.id).catch(() => {});
+
+    const modal = openModal(`
+      <div class="no-print flex justify-between items-center">
+        <h3>Order <span class="order-id-tag" style="font-family:monospace;">${escapeHtml(order.orderId)}</span></h3>
+        <span class="tag tag-${order.status}">${order.status}</span>
+      </div>
+      <p class="muted" style="font-size:13px;">${formatDate(order.createdAt)}</p>
+
+      <div class="card pad-16" style="margin:14px 0;">
+        <p><strong>Customer:</strong> ${escapeHtml(order.customerName)}</p>
+        <p><strong>Phone:</strong> ${escapeHtml(order.customerPhone)}</p>
+        ${order.deliveryMethod === "pickup" ? `<p><strong>Method:</strong> Self Pickup</p>` : `<p><strong>Address:</strong> ${escapeHtml(order.customerAddress)}</p>`}
+        ${order.notes ? `<p><strong>Notes:</strong> ${escapeHtml(order.notes)}</p>` : ""}
+      </div>
+
+      <table class="simple-table">
+        <thead><tr><th>Item</th><th>Quantity</th><th>Subtotal</th></tr></thead>
+        <tbody>
+          ${order.items.map((i) => `<tr><td>${escapeHtml(i.name)}</td><td>${escapeHtml(i.quantityLabel)}</td><td>${formatCurrency(i.lineTotal)}</td></tr>`).join("")}
+        </tbody>
+      </table>
+      <div style="text-align:right; margin-top:10px;">
+        <p>Subtotal: ${formatCurrency(order.subtotal)}</p>
+        <p>Delivery Fee: ${formatCurrency(order.deliveryFee)}</p>
+        <p style="font-weight:700; font-size:17px;">Total: ${formatCurrency(order.total)}</p>
+      </div>
+
+      <div class="no-print flex gap-10 flex-wrap" style="margin-top:18px;">
+        ${statusActions(order)}
+        <a href="${waLink}" target="_blank" class="btn btn-sm" style="background:#25D366;color:#fff;">💬 Send WhatsApp</a>
+        <button class="btn btn-sm btn-outline" id="print-order-btn">🖨️ Print</button>
+        <button class="btn btn-sm btn-outline" id="close-order-modal">Close</button>
+      </div>
+    `, { wide: true });
+
+    modal.querySelectorAll(".status-btn").forEach((btn) => {
+      btn.onclick = async () => {
+        const newStatus = btn.dataset.status;
+        if (newStatus === "cancelled") {
+          const reason = prompt("Reason for cancellation (optional):") || "";
+          await updateOrderStatus(order.id, newStatus, reason);
+        } else {
+          await updateOrderStatus(order.id, newStatus);
+        }
+        toast(`Order marked as ${newStatus}.`, "success");
+        closeModal();
+      };
+    });
+    modal.querySelector("#print-order-btn").onclick = () => window.print();
+    modal.querySelector("#close-order-modal").onclick = closeModal;
+  }
+</script>
+</body>
+</html>

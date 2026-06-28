@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Categories — Ranaweera Family Super</title>
+<link rel="icon" href="assets/images/logo.jpg"/>
+<link rel="stylesheet" href="assets/css/style.css"/>
+<link rel="stylesheet" href="assets/css/themes.css"/>
+</head>
+<body>
+<header id="app-header" class="site-header"></header>
+<div class="page-hero"><h1>Shop by Category</h1><p>Everything your family needs, organised by category</p></div>
+<main class="container section">
+  <div class="cat-grid" id="categories-mount">
+    <div class="skeleton"></div><div class="skeleton"></div>
+    <div class="skeleton"></div><div class="skeleton"></div>
+    <div class="skeleton"></div><div class="skeleton"></div>
+  </div>
+</main>
+<div id="app-floats"></div>
+<nav id="app-bottomnav"></nav>
+<footer id="app-footer" class="site-footer"></footer>
+<script type="module">
+  import "./assets/js/layout.js";
+  import { subscribeCategories } from "./assets/js/products.js";
+  import { escapeHtml } from "./assets/js/ui-helpers.js";
+  const colors = ["#e8f5ee","#fff3e8","#e0f2fe","#fce7f3","#fff9e6","#f3e8ff","#fff3e8","#e8f5ee"];
+  let ci = 0;
+  const cm = {};
+  function bg(name) { if (!cm[name]) { cm[name]=colors[ci%colors.length]; ci++; } return cm[name]; }
+  subscribeCategories((cats) => {
+    const mount = document.getElementById("categories-mount");
+    const visible = cats.filter((c) => c.visible!==false);
+    mount.innerHTML = visible.length
+      ? visible.map((c) => `
+        <a href="products.html?category=${c.id}" class="cat-card">
+          <div class="cat-icon-wrap" style="background:${bg(c.name)};">
+            ${c.imageUrl?`<img src="${c.imageUrl}" alt="${escapeHtml(c.name)}"/>`:`<span style="font-size:28px;">${c.icon||"🛒"}</span>`}
+          </div>
+          <div class="cat-card-name">${escapeHtml(c.name)}</div>
+          <div class="cat-arrow">→</div>
+        </a>`).join("")
+      : `<p class="muted text-center" style="grid-column:1/-1;">No categories yet.</p>`;
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Reviews — Admin Panel</title>
+<link rel="icon" href="../assets/images/logo.jpg" />
+<link rel="stylesheet" href="../assets/css/style.css" />
+<link rel="stylesheet" href="../assets/css/themes.css" />
+<link rel="stylesheet" href="../assets/css/admin.css" />
+</head>
+<body>
+<div id="admin-root"></div>
+
+<script type="module">
+  import { initAdminLayout, setPageTitle } from "../assets/js/admin/admin-layout.js";
+  import { db, collection, query, orderBy, onSnapshot, doc, updateDoc, deleteDoc, COL } from "../assets/js/firebase-config.js";
+  import { getProductById } from "../assets/js/products.js";
+  import { escapeHtml, formatDate, toast } from "../assets/js/ui-helpers.js";
+
+  const session = initAdminLayout("reviews.html");
+
+  if (session) {
+    setPageTitle("Review Moderation");
+    document.getElementById("admin-page-content").innerHTML = `
+      <div class="tab-row">
+        <button class="tab-btn active" data-f="pending">Pending Approval</button>
+        <button class="tab-btn" data-f="approved">Approved</button>
+        <button class="tab-btn" data-f="all">All Reviews</button>
+      </div>
+      <div id="reviews-list"></div>
+    `;
+
+    let allReviews = [];
+    let activeFilter = "pending";
+
+    document.querySelectorAll(".tab-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        activeFilter = btn.dataset.f;
+        render();
+      });
+    });
+
+    const q = query(collection(db, COL.REVIEWS), orderBy("createdAt", "desc"));
+    onSnapshot(q, async (snap) => {
+      allReviews = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      render();
+    });
+
+    async function render() {
+      const mount = document.getElementById("reviews-list");
+      let list = allReviews;
+      if (activeFilter === "pending") list = list.filter((r) => !r.approved);
+      if (activeFilter === "approved") list = list.filter((r) => r.approved);
+
+      if (!list.length) {
+        mount.innerHTML = `<div class="empty-state"><div class="icon">⭐</div><p>No reviews to show.</p></div>`;
+        return;
+      }
+
+      mount.innerHTML = `<div class="grid" style="gap:14px;">` + list.map((r) => `
+        <div class="card pad-16" data-id="${r.id}">
+          <div class="flex justify-between items-center">
+            <strong>${escapeHtml(r.customerName)}</strong>
+            <span style="color:#caa23f;">${"★".repeat(r.rating)}${"☆".repeat(5 - r.rating)}</span>
+          </div>
+          <p class="muted" style="font-size:12.5px;" data-product-name="${r.productId}">Loading product...</p>
+          <p style="margin:8px 0;">${escapeHtml(r.comment)}</p>
+          <div class="flex justify-between items-center">
+            <span class="muted" style="font-size:12px;">${formatDate(r.createdAt)}</span>
+            <div class="flex gap-8">
+              ${!r.approved ? `<button class="btn btn-sm btn-primary approve-btn">Approve</button>` : `<button class="btn btn-sm btn-outline unapprove-btn">Unapprove</button>`}
+              <button class="btn btn-sm btn-danger delete-review-btn">Delete</button>
+            </div>
+          </div>
+        </div>`).join("") + `</div>`;
+
+      // lazy load product names
+      mount.querySelectorAll("[data-product-name]").forEach(async (el) => {
+        const product = await getProductById(el.dataset.productName);
+        el.textContent = product ? `On: ${product.name}` : "Product no longer available";
+      });
+
+      mount.querySelectorAll(".approve-btn").forEach((btn) => {
+        btn.onclick = async () => {
+          await updateDoc(doc(db, COL.REVIEWS, btn.closest(".card").dataset.id), { approved: true });
+          toast("Review approved and now visible to customers.", "success");
+        };
+      });
+      mount.querySelectorAll(".unapprove-btn").forEach((btn) => {
+        btn.onclick = async () => {
+          await updateDoc(doc(db, COL.REVIEWS, btn.closest(".card").dataset.id), { approved: false });
+          toast("Review hidden from customers.", "success");
+        };
+      });
+      mount.querySelectorAll(".delete-review-btn").forEach((btn) => {
+        btn.onclick = async () => {
+          if (!confirm("Delete this review permanently?")) return;
+          await deleteDoc(doc(db, COL.REVIEWS, btn.closest(".card").dataset.id));
+          toast("Review deleted.", "success");
+        };
+      });
+    }
+  }
+</script>
+</body>
+</html>

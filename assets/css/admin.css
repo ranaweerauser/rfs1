@@ -1,0 +1,49 @@
+/* ==========================================================================
+   Admin Panel — Layout styles (extends style.css)
+   ========================================================================== */
+
+.admin-shell{ display:flex; min-height:100vh; }
+.admin-sidebar{ width:240px; background:var(--rfs-gradient-primary); color:#f4e7d2; flex-shrink:0; display:flex; flex-direction:column; position:sticky; top:0; height:100vh; overflow-y:auto; }
+.admin-sidebar .brand-row{ display:flex; align-items:center; gap:10px; padding:20px 18px; border-bottom:1px solid rgba(255,255,255,.12); }
+.admin-sidebar .brand-row img{ width:38px; height:38px; border-radius:8px; object-fit:cover; }
+.admin-sidebar .brand-row span{ font-weight:700; font-size:14.5px; font-family:var(--font-head); }
+.admin-nav{ padding:14px 10px; flex:1; }
+.admin-nav a{ display:flex; align-items:center; gap:10px; padding:11px 14px; border-radius:10px; font-size:14px; margin-bottom:3px; color:#e7d9bc; }
+.admin-nav a:hover, .admin-nav a.active{ background:rgba(255,255,255,.12); color:#fff; }
+.admin-nav .nav-section-title{ font-size:11px; text-transform:uppercase; letter-spacing:.6px; opacity:.6; padding:14px 14px 4px; }
+.admin-sidebar .sidebar-footer{ padding:14px; border-top:1px solid rgba(255,255,255,.12); font-size:12.5px; }
+
+.admin-main{ flex:1; min-width:0; background:var(--bg-body); }
+.admin-topbar{ background:var(--bg-surface); border-bottom:1px solid var(--border-soft); padding:14px 24px; display:flex; justify-content:space-between; align-items:center; position:sticky; top:0; z-index:30; }
+.admin-content{ padding:24px; }
+.admin-mobile-toggle{ display:none; }
+@media (max-width:920px){
+  .admin-sidebar{ position:fixed; left:-260px; z-index:90; transition:left .25s ease; }
+  .admin-sidebar.open{ left:0; }
+  .admin-mobile-toggle{ display:block; }
+}
+
+.stat-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:18px; }
+.stat-card{ background:var(--bg-surface); border:1px solid var(--border-soft); border-radius:var(--radius-md); padding:20px; display:flex; flex-direction:column; gap:6px; }
+.stat-card .stat-icon{ font-size:22px; }
+.stat-card .stat-value{ font-size:26px; font-weight:700; font-family:var(--font-head); }
+.stat-card .stat-label{ font-size:12.5px; color:var(--text-muted); }
+
+.admin-table-wrap{ background:var(--bg-surface); border:1px solid var(--border-soft); border-radius:var(--radius-md); overflow-x:auto; }
+.admin-toolbar{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:18px; }
+.tab-row{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px; }
+.tab-btn{ padding:8px 16px; border-radius:999px; border:1px solid var(--border-soft); background:var(--bg-surface); font-size:13px; font-weight:600; }
+.tab-btn.active{ background:var(--rfs-gradient-gold); color:#2a1505; border-color:transparent; }
+.color-swatch-input{ display:flex; align-items:center; gap:10px; }
+.color-swatch-input input[type=color]{ width:44px; height:36px; border:none; border-radius:8px; padding:0; background:none; }
+.product-thumb-mini{ width:40px; height:40px; border-radius:6px; object-fit:cover; }
+.notif-dot{ width:9px; height:9px; border-radius:50%; background:#c0392b; position:absolute; top:6px; right:6px; }
+.live-pulse{ width:9px; height:9px; border-radius:50%; background:#2ecc71; display:inline-block; animation:pulse 1.5s infinite; }
+@keyframes pulse{ 0%{box-shadow:0 0 0 0 rgba(46,204,113,.6);} 70%{box-shadow:0 0 0 8px rgba(46,204,113,0);} 100%{box-shadow:0 0 0 0 rgba(46,204,113,0);} }
+.image-upload-box{ border:2px dashed var(--border-soft); border-radius:10px; padding:24px; text-align:center; cursor:pointer; }
+.image-upload-box:hover{ border-color:var(--rfs-gold-2); }
+.image-preview-grid{ display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; }
+.image-preview-grid .preview-item{ position:relative; width:74px; height:74px; }
+.image-preview-grid img{ width:100%; height:100%; object-fit:cover; border-radius:8px; }
+.image-preview-grid .remove-img{ position:absolute; top:-6px; right:-6px; background:#c0392b; color:#fff; border:none; border-radius:50%; width:20px; height:20px; font-size:11px; }
+.variant-row{ display:grid; grid-template-columns:1fr 100px 100px auto; gap:8px; margin-bottom:8px; align-items:center; }

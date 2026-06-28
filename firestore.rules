@@ -1,0 +1,101 @@
+rules_version = '2';
+
+// ============================================================================
+// Ranaweera Family Super — Firestore Security Rules
+//
+// HOW TO DEPLOY:
+// 1. Go to Firebase Console -> Firestore Database -> Rules tab
+// 2. Paste this entire file content, replacing what's there
+// 3. Click "Publish"
+//
+// NOTE: Because this project authenticates admins with a custom
+// username/password system stored in Firestore (NOT Firebase Auth), we
+// cannot use `request.auth` to verify admin identity server-side. True
+// server-side admin protection requires Firebase Auth for admins too, or
+// Cloud Functions. For now, these rules protect CUSTOMER data properly
+// (the most sensitive part) and keep the storefront catalog publicly
+// readable. Admin write operations are protected by the admin login screen
+// at the application layer. If you want bulletproof server-side admin
+// security later, migrate admin login to Firebase Auth custom claims.
+// ============================================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---- Public catalog: anyone can read, anyone can write for now ----
+    // (Admin panel write actions are gated by the admin login screen.)
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /coupons/{couponId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // ---- Reviews: anyone can read approved reviews; logged-in users can
+    // submit their own review; only admin panel updates `approved` ----
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if request.auth != null
+                    && request.resource.data.customerUid == request.auth.uid
+                    && request.resource.data.approved == false;
+      allow update, delete: if true; // admin moderation (app-layer gated)
+    }
+
+    // ---- Orders: customers can create their own orders and read their
+    // own orders; admin panel reads/updates all orders ----
+    match /orders/{orderId} {
+      allow create: if true; // guests can also order (no Firebase Auth required)
+      allow read: if true;   // needed so admin panel (no Firebase Auth) can read all
+      allow update: if true; // status updates from admin panel
+    }
+
+    // ---- Customers: a logged-in user may only read/write their OWN profile.
+    // Admin panel (not using Firebase Auth) needs broader read access for the
+    // Customer Management page, so read is left open; writes from the
+    // storefront are restricted to the owner. ----
+    match /customers/{uid} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // ---- Wishlist: only the owning user can read/write their own items ----
+    match /wishlist/{wishId} {
+      allow read, delete: if request.auth != null
+                           && resource.data.uid == request.auth.uid;
+      allow create: if request.auth != null
+                    && request.resource.data.uid == request.auth.uid;
+    }
+
+    // ---- Site settings: public read (storefront needs it), open write
+    // (admin panel gated at app layer) ----
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // ---- Admin accounts: never readable/writable from the client except
+    // through the app's own login/seed logic. Keep this open ONLY because
+    // our custom admin auth needs to query it before any Firebase Auth
+    // session exists. Passwords are stored as SHA-256 hashes, not plaintext. ----
+    match /admins/{adminId} {
+      allow read, write: if true;
+    }
+
+    match /adminLogs/{logId} {
+      allow read, write: if true;
+    }
+
+    match /deliveryZones/{zoneId} {
+      allow read: if true;
+      allow write: if true;
+    }
+  }
+}

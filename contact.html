@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Contact Us — Ranaweera Family Super</title>
+<link rel="icon" href="assets/images/logo.jpg"/>
+<link rel="stylesheet" href="assets/css/style.css"/>
+<link rel="stylesheet" href="assets/css/themes.css"/>
+</head>
+<body>
+<header id="app-header" class="site-header"></header>
+<div class="page-hero"><h1>Contact Us</h1><p>We'd love to hear from you</p></div>
+<main class="container section">
+  <div class="grid" style="grid-template-columns:1fr 1fr;gap:32px;align-items:start;">
+    <div class="card pad-28">
+      <h3 style="margin-bottom:20px;">Get in Touch</h3>
+      <div id="contact-info">
+        <div class="contact-row" style="padding:10px 0;font-size:14.5px;border-bottom:1px solid var(--border-soft);">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M5 4h3l2 5-2.5 1.5a11 11 0 0 0 5 5L14 13l5 2v3a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2Z"/></svg>
+          <span id="c-phone" class="muted">Loading…</span>
+        </div>
+        <div class="contact-row" style="padding:10px 0;font-size:14.5px;border-bottom:1px solid var(--border-soft);">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 7 10-7"/></svg>
+          <span id="c-email" class="muted">Loading…</span>
+        </div>
+        <div class="contact-row" style="padding:10px 0;font-size:14.5px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7Z"/><circle cx="12" cy="9" r="2.5"/></svg>
+          <span id="c-address" class="muted">Loading…</span>
+        </div>
+      </div>
+      <div style="margin-top:20px;"><a id="c-wa-btn" href="#" target="_blank" class="btn btn-block" style="background:#25D366;color:#fff;">💬 Chat on WhatsApp</a></div>
+    </div>
+    <div class="card pad-28">
+      <h3 style="margin-bottom:20px;">Store Hours</h3>
+      <div class="hours-row"><span>Monday – Friday</span><span style="font-weight:700;">7:00 AM – 9:00 PM</span></div>
+      <div class="hours-row"><span>Saturday</span><span style="font-weight:700;">7:00 AM – 9:00 PM</span></div>
+      <div class="hours-row"><span>Sunday</span><span style="font-weight:700;">7:00 AM – 8:00 PM</span></div>
+      <div class="hours-row"><span>Public Holidays</span><span style="font-weight:700;">7:00 AM – 8:00 PM</span></div>
+      <div id="c-map" style="margin-top:20px;border-radius:12px;overflow:hidden;height:180px;background:var(--gray-100);"></div>
+    </div>
+  </div>
+</main>
+<div id="app-floats"></div><nav id="app-bottomnav"></nav>
+<footer id="app-footer" class="site-footer"></footer>
+<script type="module">
+  import "./assets/js/layout.js";
+  import { subscribeSettings } from "./assets/js/settings.js";
+  import { escapeHtml } from "./assets/js/ui-helpers.js";
+  subscribeSettings((s) => {
+    document.getElementById("c-phone").textContent = s.phone;
+    document.getElementById("c-email").textContent = s.email;
+    document.getElementById("c-address").textContent = s.address;
+    document.getElementById("c-wa-btn").href = `https://wa.me/${(s.whatsappNumber||"").replace(/[^0-9]/g,"")}`;
+    if (s.mapEmbedUrl) document.getElementById("c-map").innerHTML = `<iframe src="${s.mapEmbedUrl}" width="100%" height="180" style="border:none;" loading="lazy"></iframe>`;
+  });
+</script>
+</body>
+</html>
